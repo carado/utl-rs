@@ -24,6 +24,12 @@ pub trait BitsExt:
 			None
 		}
 	}
+
+	pub fn pad_up(self) -> Self {
+		debug_assert_eq!(align.count_ones(), 1);
+		let align_l2 = align.trailing_zeros();
+		ceil_shr(v, align_l2) << align_l2 as _
+	}
 }
 
 impl<T> BitsExt for T where
