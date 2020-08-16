@@ -1,13 +1,15 @@
 use std::mem::transmute as t;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NoOpHasher(u64);
+pub struct Hasher(u64);
 
-pub type NoOpHasherBuilder = std::hash::BuildHasherDefault<NoOpHasher>;
-pub type NoOpMap<K, V> = std::collections::HashMap<K, V, NoOpHasherBuilder>;
-pub type NoOpSet<T> = std::collections::HashSet<T, NoOpHasherBuilder>;
+pub type BuildHasher = std::hash::BuildHasherDefault<Hasher>;
+pub type Map<K, V> = std::collections::HashMap<K, V, BuildHasher>;
+pub type Set<T> = std::collections::HashSet<T, BuildHasher>;
 
-impl std::hash::Hasher for NoOpHasher {
+pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+
+impl std::hash::Hasher for Hasher {
 	fn finish(&self) -> u64 { self.0 }
 
 	fn write(&mut self, bytes: &[u8]) {

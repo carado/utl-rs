@@ -1,5 +1,5 @@
 [package]
-name = "entry_ext"
+name = "entry-ext"
 version = "0.1.0"
 authors = ["carado <carado@carado.moe>"]
 edition = "2018"

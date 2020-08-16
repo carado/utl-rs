@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+	"utl",
 	"cvec",
 	"sbox",
 	"entry-ext",
@@ -8,8 +9,8 @@ members = [
 	"by",
 	"atomic",
 	"bits-ext",
-	"no-op-hasher",
 	"on-drop",
 	"rev-ord",
+	"maps",
 ]
 

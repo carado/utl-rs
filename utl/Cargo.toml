@@ -1,0 +1,23 @@
+[package]
+name = "utl"
+version = "0.1.0"
+authors = ["carado <carado@carado.moe>"]
+edition = "2018"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+num-traits = "0.2"
+
+cvec = { path = "../cvec" }
+sbox = { path = "../sbox" }
+entry-ext = { path = "../entry-ext" }
+just-hash = { path = "../just-hash" }
+by = { path = "../by" }
+atomic = { path = "../atomic" }
+bits-ext = { path = "../bits-ext" }
+on-drop = { path = "../on-drop" }
+rev-ord = { path = "../rev-ord" }
+maps = { path = "../maps" }
+
