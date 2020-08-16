@@ -1,0 +1,9 @@
+[package]
+name = "rev-ord"
+version = "0.1.0"
+authors = ["carado <carado@carado.moe>"]
+edition = "2018"
+
+[lib]
+path = "lib.rs"
+

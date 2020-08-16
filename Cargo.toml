@@ -6,5 +6,11 @@ members = [
 	"entry-ext",
 	"just-hash",
 	"by",
+	"atomic",
+	"bits-ext",
+	"no-op-hasher",
+	"on-drop",
+	"rev-ord",
+	"weak-key",
 ]
 
