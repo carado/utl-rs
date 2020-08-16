@@ -1,11 +1,9 @@
 use super::*;
 
-#[derive(Debug, Copy, Clone, Deref, DerefMut)]
+#[derive(Debug, Copy, Clone, Deref, DerefMut, Constructor)]
 pub struct ByPtr<T: ?Sized>(pub T);
 
 impl<T> ByPtr<T> {
-	pub fn new(value: T) -> Self { ByPtr(value) }
-
 	pub fn into_inner(self) -> T { self.0 }
 }
 

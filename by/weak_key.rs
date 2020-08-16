@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Deref, DerefMut, Constructor)]
 pub struct WeakKey<T>(pub T);
 
 impl<T> PartialEq for WeakKey<std::sync::Weak<T>> {

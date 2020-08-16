@@ -12,5 +12,6 @@ members = [
 	"on-drop",
 	"rev-ord",
 	"maps",
+	"range-ext",
 ]
 

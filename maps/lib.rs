@@ -1,6 +1,7 @@
 pub mod nop;
 
-#[cfg(fnv)]
+pub use self::nop::Map as Nop;
+
 pub mod sht {
 	pub use fnv::{
 		FnvHasher as Hasher,
@@ -12,7 +13,8 @@ pub mod sht {
 	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
 }
 
-#[cfg(rustc_hash)]
+pub use self::sht::Map as Sht;
+
 pub mod int {
 	pub use rustc_hash::{
 		FxHasher as Hasher,
@@ -24,6 +26,8 @@ pub mod int {
 
 	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
 }
+
+pub use self::int::Map as Int;
 
 pub mod std {
 	pub use std::collections::{
@@ -38,6 +42,8 @@ pub mod std {
 	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
 }
 
+pub use self::std::Map as Std;
+
 pub mod det {
 	use std::collections::*;
 
@@ -48,6 +54,8 @@ pub mod det {
 
 	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
 }
+
+pub use self::det::Map as Det;
 
 use ::std::hash::{Hash, Hasher};
 

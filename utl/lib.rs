@@ -9,5 +9,6 @@ pub use {
 	on_drop::*,
 	rev_ord::*,
 	maps,
+	range_ext::*,
 };
 

@@ -1,13 +1,8 @@
 [package]
-name = "maps"
+name = "range-ext"
 version = "0.1.0"
 authors = ["carado <carado@carado.moe>"]
 edition = "2018"
 
 [lib]
 path = "lib.rs"
-
-[dependencies]
-rustc-hash = "1.1"
-fnv = "1.0"
-
