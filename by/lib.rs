@@ -1,6 +1,6 @@
 use {
 	std::{ops::{Deref, DerefMut}, hash::{Hash, Hasher}, borrow::*, cmp::Ordering},
-	derive_more::{Deref, DerefMut, Constructor, From},
+	derive_more::{Deref, DerefMut, Constructor},
 };
 
 mod by_ptr;

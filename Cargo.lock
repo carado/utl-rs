@@ -93,6 +93,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "range-ext"
+version = "0.1.0"
+
+[[package]]
 name = "rev-ord"
 version = "0.1.0"
 
@@ -136,6 +140,7 @@ dependencies = [
  "maps",
  "num-traits",
  "on-drop",
+ "range-ext",
  "rev-ord",
  "sbox",
 ]
