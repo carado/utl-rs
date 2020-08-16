@@ -5,6 +5,7 @@ use {
 
 mod by_ptr;
 mod by_key;
+mod weak_key;
 
-pub use {by_ptr::*, by_key::*};
+pub use {by_ptr::*, by_key::*, weak_key::*};
 

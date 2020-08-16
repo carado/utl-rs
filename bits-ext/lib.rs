@@ -1,5 +1,4 @@
-use crate::prelude::*;
-use {std::ops::{Shr, Shl}, num_traits::{PrimInt, Saturating}};
+use {std::{ops::{Shr, Shl}, mem::size_of}, num_traits::{PrimInt, Saturating}};
 
 pub trait BitsExt:
 	PrimInt + Shl<u8, Output = Self> + Shr<u8, Output = Self> + Saturating
