@@ -111,6 +111,7 @@ impl<T> CVec<T> {
 		}
 	}
 
+	#[inline]
 	pub fn push(&mut self, elem: T) {
 		unsafe {
 			let old_len = self.len;

@@ -1,7 +1,7 @@
-pub mod no_op;
+pub mod nop;
 
 #[cfg(fnv)]
-pub mod shrt {
+pub mod sht {
 	pub use fnv::{
 		FnvHasher as Hasher,
 		FnvBuildHasher as BuildHasher,
