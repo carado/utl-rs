@@ -1,0 +1,9 @@
+[workspace]
+
+members = [
+	"cvec",
+	"sbox",
+	"entry-ext",
+	"just-hash",
+]
+

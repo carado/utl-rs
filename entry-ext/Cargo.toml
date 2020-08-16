@@ -1,0 +1,11 @@
+[package]
+name = "entry_ext"
+version = "0.1.0"
+authors = ["carado <carado@carado.moe>"]
+edition = "2018"
+
+[dependencies]
+
+[lib]
+path = "lib.rs"
+
