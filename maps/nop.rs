@@ -7,7 +7,9 @@ pub type BuildHasher = std::hash::BuildHasherDefault<Hasher>;
 pub type Map<K, V> = std::collections::HashMap<K, V, BuildHasher>;
 pub type Set<T> = std::collections::HashSet<T, BuildHasher>;
 
-pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+pub fn hash(val: &(impl ?Sized + super::Hash)) -> u64 {
+	super::hash::<Hasher, _>(val)
+}
 
 impl std::hash::Hasher for Hasher {
 	fn finish(&self) -> u64 { self.0 }

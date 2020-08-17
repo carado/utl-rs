@@ -10,7 +10,9 @@ pub mod sht {
 		FnvHashSet as Set,
 	};
 
-	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+	pub fn hash(val: &(impl ?Sized + super::Hash)) -> u64 {
+		super::hash::<Hasher, _>(val)
+	}
 }
 
 pub use self::sht::Map as Sht;
@@ -24,7 +26,9 @@ pub mod int {
 
 	pub type BuildHasher = std::hash::BuildHasherDefault<Hasher>;
 
-	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+	pub fn hash(val: &(impl ?Sized + super::Hash)) -> u64 {
+		super::hash::<Hasher, _>(val)
+	}
 }
 
 pub use self::int::Map as Int;
@@ -39,7 +43,9 @@ pub mod std {
 		},
 	};
 
-	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+	pub fn hash(val: &(impl ?Sized + super::Hash)) -> u64 {
+		super::hash::<Hasher, _>(val)
+	}
 }
 
 pub use self::std::Map as Std;
@@ -52,14 +58,16 @@ pub mod det {
 	pub type Map<K, V> = HashMap<K, V, BuildHasher>;
 	pub type Set<T> = HashSet<T, BuildHasher>;
 
-	pub fn hash(val: &impl super::Hash) -> u64 { super::hash::<Hasher, _>(val) }
+	pub fn hash(val: &(impl ?Sized + super::Hash)) -> u64 {
+		super::hash::<Hasher, _>(val)
+	}
 }
 
 pub use self::det::Map as Det;
 
 use ::std::hash::{Hash, Hasher};
 
-fn hash<H: Hasher + Default, T: Hash>(val: &T) -> u64 {
+pub fn hash<H: Hasher + Default, T: ?Sized + Hash>(val: &T) -> u64 {
 	let mut hasher = H::default();
 	val.hash(&mut hasher);
 	hasher.finish()

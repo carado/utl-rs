@@ -1,7 +1,7 @@
-use {std::{ops::{Shr, Shl}, mem::size_of}, num_traits::{PrimInt, Saturating}};
+use {std::{ops::{Shr, Shl}, mem::size_of}, num_traits::PrimInt};
 
 pub trait BitsExt:
-	PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self> + Saturating
+	PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self>
 {
 	const BIT_COUNT: u32 = (8 * size_of::<Self>()) as u32;
 
@@ -46,7 +46,7 @@ pub trait BitsExt:
 }
 
 impl<T> BitsExt for T where
-	T: PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self> + Saturating
+	T: PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self>
 {}
 
 #[test]
