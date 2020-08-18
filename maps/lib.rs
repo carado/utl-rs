@@ -67,6 +67,8 @@ pub use self::det::Map as Det;
 
 use ::std::hash::{Hash, Hasher};
 
+pub trait BorrowKey<K> = Hash + Eq + ?Sized where K: Borrow<Self>;
+
 pub fn hash<H: Hasher + Default, T: ?Sized + Hash>(val: &T) -> u64 {
 	let mut hasher = H::default();
 	val.hash(&mut hasher);
