@@ -22,5 +22,6 @@ Can be used as their own crates, or just `use ::utl::*` to re-export useful trai
 * `rev-ord` implements `PartialOrd` and `Ord` but in reverse order to its contents (useful for `BinaryHeap`)
 * `sbox` works like a `Box` to a DST except that it may remove the extra layer of indirection when the content is small (and aligned) enough; relies on `Box<dyn Trait>: Trait` to avoid branching
 * `thin` works like a `Box` except it is only one `usize` long (contrary to fat pointers when DSTs are used)
+* `atomic` re-exports parts of `std::sync::atomic` under more useful names
 * `utl` re-exports all useful traits, types, and modules
 
