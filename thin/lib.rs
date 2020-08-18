@@ -51,15 +51,7 @@ impl<T: ?Sized, Al> Thin<T, Al> {
 		}
 	}
 
-	pub fn as_dyn_non_null(self_: &Self) -> NonNull<T> {
-		unsafe { NonNull::new_unchecked(Self::as_dyn_ptr(self_) as _) }
-	}
-
 	pub fn as_u8_ptr(self_: &Self) -> *const u8 { self_.0.get() as _ }
-
-	pub fn as_u8_non_null(self_: &Self) -> NonNull<u8> {
-		unsafe { NonNull::new_unchecked(Self::as_u8_ptr(self_) as _) }
-	}
 
 	pub fn into_u8_ptr(self_: Self) -> *const u8 {
 		let ptr = Self::as_u8_ptr(&self_);
@@ -67,22 +59,39 @@ impl<T: ?Sized, Al> Thin<T, Al> {
 		ptr
 	}
 
-	pub fn into_u8_non_null(self_: Self) -> NonNull<u8> {
-		unsafe { NonNull::new_unchecked(Self::into_u8_ptr(self_) as _) }
-	}
-
 	pub unsafe fn from_u8_ptr(ptr: *const u8) -> Self {
 		Self(NonZeroUsize::new(ptr as _).unwrap(), PhantomData)
+	}
+
+	/*
+	pub fn as_dyn_non_null(self_: &Self) -> NonNull<T> {
+		unsafe { NonNull::new_unchecked(Self::as_dyn_ptr(self_) as _) }
+	}
+
+	pub fn as_u8_non_null(self_: &Self) -> NonNull<u8> {
+		unsafe { NonNull::new_unchecked(Self::as_u8_ptr(self_) as _) }
+	}
+
+	pub fn into_u8_non_null(self_: Self) -> NonNull<u8> {
+		unsafe { NonNull::new_unchecked(Self::into_u8_ptr(self_) as _) }
 	}
 
 	pub unsafe fn from_u8_non_null(ptr: NonNull<u8>) -> Self {
 		Self(NonZeroUsize::new_unchecked(ptr.as_ptr() as _), PhantomData)
 	}
+	*/
 
 	unsafe fn deallocer(next: Layout) -> impl FnOnce(*const u8) {
 		let (layout, offset) = Layout::new::<*mut ()>().extend(next).unwrap();
 		assert_eq!(offset, size_of::<Al>());
 		move |ptr| Alloc.dealloc(NonNull::new_unchecked(ptr as _), layout)
+	}
+
+	pub unsafe fn deref_from_u8_ptr(ptr: *const u8) -> *const T {
+		let self_ = Self::from_u8_ptr(ptr);
+		let dyn_ = Self::as_dyn_ptr(&self_);
+		forget(self_);
+		dyn_
 	}
 }
 
