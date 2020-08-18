@@ -1,4 +1,4 @@
-=== carado's utl-rs
+### carado's utl-rs
 
 Various (not very tested and entirely undocumented) utilities for Rust.
 
