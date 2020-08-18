@@ -1,6 +1,7 @@
 #![feature(
 	allocator_api,
 	trusted_len,
+	extend_one,
 )]
 
 use std::{
@@ -163,6 +164,40 @@ impl<T> CVec<T> {
 	pub fn as_ptr(&self) -> *mut T { self.data.as_ptr() }
 }
 
+impl<T> Extend<T> for CVec<T> {
+	fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+		unsafe {
+			let iter = iter.into_iter();
+
+			dbg!(iter.size_hint().0);
+			let mut alloc_cap = Self::len_cap(self.len + iter.size_hint().0);
+
+			self.resize_cap(self.cap(), alloc_cap, Alloc::grow);
+
+			for (item, pos) in iter.zip(self.len ..) {
+				if pos == alloc_cap {
+					let new_alloc_cap = (alloc_cap * 2).max(1);
+					dbg!(pos, alloc_cap, new_alloc_cap);
+					self.resize_cap(alloc_cap, new_alloc_cap, Alloc::grow);
+					alloc_cap = new_alloc_cap;
+				}
+
+				self.data.as_ptr().add(pos).write(item);
+				self.len += 1;
+			}
+
+			let should_cap = Self::len_cap(self.len);
+			if should_cap != alloc_cap {
+				dbg!(alloc_cap, should_cap);
+				debug_assert!(should_cap < alloc_cap);
+				self.resize_cap(alloc_cap, should_cap, Alloc::shrink);
+			}
+		}
+	}
+
+	fn extend_one(&mut self, val: T) { self.push(val); }
+}
+
 impl<T> IntoIterator for CVec<T> {
 	type IntoIter = IntoIter<T>;
 	type Item = T;
@@ -235,5 +270,31 @@ impl<T> ops::DerefMut for CVec<T> {
 	fn deref_mut(&mut self) -> &mut [T] {
 		unsafe { slice::from_raw_parts_mut(self.as_ptr(), self.len) }
 	}
+}
+
+#[test]
+fn test() {
+	let mut vec;
+
+	eprintln!("correct size_hint");
+	vec = CVec::new();
+	vec.extend(0..1000);
+
+	eprintln!("too small size_hint");
+	vec = CVec::new();
+	vec.extend((0..100).chain((0..1000).filter(|_| true)));
+
+	eprintln!("too large size_hint");
+
+	struct I(std::ops::Range<i32>);
+
+	impl Iterator for I {
+		type Item = i32;
+		fn next(&mut self) -> Option<i32> { self.0.next() }
+		fn size_hint(&self) -> (usize, Option<usize>) { (1000, None) }
+	}
+
+	vec = CVec::new();
+	vec.extend(I(0..100));
 }
 

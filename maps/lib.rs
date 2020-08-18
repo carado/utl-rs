@@ -1,3 +1,7 @@
+#![feature(
+	trait_alias,
+)]
+
 pub mod nop;
 
 pub use self::nop::Map as Nop;
@@ -67,7 +71,11 @@ pub use self::det::Map as Det;
 
 use ::std::hash::{Hash, Hasher};
 
-pub trait BorrowKey<K> = Hash + Eq + ?Sized where K: Borrow<Self>;
+pub type GenMap<K, V, S> = ::std::collections::HashMap<K, V, S>;
+pub type GenSet<T   , S> = ::std::collections::HashSet<T   , S>;
+
+pub trait BorrowKey<K> = Hash + Eq + ?Sized where
+	K: ::std::borrow::Borrow<Self>;
 
 pub fn hash<H: Hasher + Default, T: ?Sized + Hash>(val: &T) -> u64 {
 	let mut hasher = H::default();
