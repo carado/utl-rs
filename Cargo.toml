@@ -13,5 +13,6 @@ members = [
 	"rev-ord",
 	"maps",
 	"range-ext",
+	"thin",
 ]
 

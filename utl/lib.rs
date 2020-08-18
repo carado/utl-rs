@@ -10,5 +10,6 @@ pub use {
 	rev_ord::*,
 	maps,
 	range_ext::*,
+	thin::*,
 };
 

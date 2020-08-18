@@ -21,4 +21,5 @@ on-drop = { path = "../on-drop" }
 rev-ord = { path = "../rev-ord" }
 maps = { path = "../maps" }
 range-ext = { path = "../range-ext" }
+thin = { path = "../thin" }
 

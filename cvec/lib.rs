@@ -35,6 +35,16 @@ impl<T> CVec<T> {
 		v
 	}
 
+	pub fn into_raw(self) -> (NonNull<T>, usize) {
+		let pair = (self.data, self.len);
+		forget(self);
+		pair
+	}
+
+	pub unsafe fn from_raw(data: NonNull<T>, len: usize) -> Self {
+		Self { data, len }
+	}
+
 	fn len_cap(len: usize) -> usize {
 		let cap = match len {
 			0 => 0,

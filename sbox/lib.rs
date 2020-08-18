@@ -109,6 +109,18 @@ impl<T: ?Sized, U, S> SBoxOr<T, U, S> {
 	} }
 }
 
+impl<T: ?Sized, S: 'static + Copy> SBox<T, S> {
+	pub unsafe fn into_raw(self) -> (num::NonZeroUsize, S) {
+		let pair = (self.vtable, self.data);
+		mem::forget(self);
+		pair
+	}
+
+	pub unsafe fn from_raw(vtable: num::NonZeroUsize, data: S) -> Self {
+		Self { vtable, data, _phantom: marker::PhantomData }
+	}
+}
+
 impl<T: ?Sized, U, S> Drop for SBoxOr<T, U, S> {
 	fn drop(&mut self) { unsafe {
 		if self.is_sbox() {
