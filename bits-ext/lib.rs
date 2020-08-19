@@ -1,10 +1,23 @@
-use {std::{ops::{Shr, Shl}, mem::size_of}, num_traits::PrimInt};
+#![feature(
+	trait_alias,
+)]
+
+use {std::{ops::*, mem::size_of}, num_traits::*};
 
 pub use num_traits;
 
-pub trait BitsExt:
-	PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self>
-{
+pub trait BitsExtReqs =
+	PrimInt +
+	Shl<u32, Output = Self> + ShlAssign<u32> +
+	Shr<u32, Output = Self> + ShrAssign<u32> +
+	AsPrimitive<u8> + AsPrimitive<u16> + AsPrimitive<u32> + AsPrimitive<u64> +
+	AsPrimitive<i8> + AsPrimitive<i16> + AsPrimitive<i32> + AsPrimitive<i64> +
+	BitOr  + BitOrAssign  +
+	BitAnd + BitAndAssign +
+	BitXor + BitXorAssign +
+;
+
+pub trait BitsExt: BitsExtReqs {
 	const BIT_COUNT: u32 = (8 * size_of::<Self>()) as u32;
 
 	#[inline]
@@ -47,9 +60,7 @@ pub trait BitsExt:
 	}
 }
 
-impl<T> BitsExt for T where
-	T: PrimInt + Shl<u32, Output = Self> + Shr<u32, Output = Self>
-{}
+impl<T: BitsExtReqs> BitsExt for T {}
 
 #[test]
 fn test() {
