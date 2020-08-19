@@ -108,6 +108,8 @@ impl<T> CVec<T> {
 		}
 	}
 
+	pub fn extend(&mut self, data: &[T]) where T: Copy { self.extend_copy(data); }
+
 	pub fn extend_copy(&mut self, data: &[T]) where T: Copy {
 		unsafe {
 			let pos = self.len;
@@ -162,6 +164,8 @@ impl<T> CVec<T> {
 	pub fn as_non_null(&self) -> NonNull<T> { self.data }
 
 	pub fn as_ptr(&self) -> *mut T { self.data.as_ptr() }
+
+	pub fn reserve(&self, _: usize) {} // intentionally a no-op
 }
 
 impl<T> Extend<T> for CVec<T> {
