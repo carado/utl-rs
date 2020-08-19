@@ -108,8 +108,6 @@ impl<T> CVec<T> {
 		}
 	}
 
-	pub fn extend(&mut self, data: &[T]) where T: Copy { self.extend_copy(data); }
-
 	pub fn extend_copy(&mut self, data: &[T]) where T: Copy {
 		unsafe {
 			let pos = self.len;
