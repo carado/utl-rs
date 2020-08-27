@@ -70,7 +70,7 @@ impl<T> CVec<T> {
 
 	unsafe fn resize_cap(
 		&mut self, old_cap: usize, new_cap: usize,
-		f: unsafe fn(&mut Alloc, NonNull<u8>, Layout, usize) ->
+		f: unsafe fn(&mut Alloc, NonNull<u8>, Layout, Layout) ->
 			Result<NonNull<[u8]>, AllocErr>,
 	) {
 		debug_assert!(new_cap.count_ones() <= 1 && old_cap.count_ones() <= 1);
@@ -78,7 +78,7 @@ impl<T> CVec<T> {
 			&mut Alloc,
 			self.data.cast(),
 			Self::layout(old_cap),
-			size_of::<T>() * new_cap,
+			Self::layout(new_cap),
 		).unwrap().cast();
 	}
 

@@ -52,11 +52,18 @@ pub trait BitsExt: BitsExtReqs {
 		}
 	}
 
+	/*
 	#[inline]
 	fn pad_to_align(self, align: Self) -> Self {
 		debug_assert_eq!(align.count_ones(), 1);
 		let align_l2 = align.trailing_zeros();
 		self.ceil_shr(align_l2) << align_l2
+	}
+	*/
+
+	#[inline]
+	fn pad_to_align(self, align: Self) -> Self {
+		(self + align - Self::one()) & !(align - Self::one())
 	}
 }
 

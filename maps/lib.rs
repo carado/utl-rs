@@ -77,6 +77,8 @@ pub type GenSet<T   , S> = ::std::collections::HashSet<T   , S>;
 pub trait BorrowKey<K> = Hash + Eq + ?Sized where
 	K: ::std::borrow::Borrow<Self>;
 
+pub trait Key = ::std::hash::Hash + Eq;
+
 pub fn hash<H: Hasher + Default, T: ?Sized + Hash>(val: &T) -> u64 {
 	let mut hasher = H::default();
 	val.hash(&mut hasher);
