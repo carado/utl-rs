@@ -50,3 +50,8 @@ impl<T: ?Sized> Deref for ByPtr<T> {
 	fn deref(&self) -> &T { &self.0 }
 }
 
+impl<T, U> CoerceUnsized<ByPtr<U>> for ByPtr<T> where
+	T: ?Sized + CoerceUnsized<U>,
+	U: ?Sized,
+{}
+

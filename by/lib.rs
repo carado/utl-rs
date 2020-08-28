@@ -1,5 +1,15 @@
+#![feature(
+	coerce_unsized,
+	unsize,
+)]
+
 use {
-	std::{ops::{Deref, DerefMut}, hash::{Hash, Hasher}, borrow::*, cmp::Ordering},
+	std::{
+		ops::{Deref, DerefMut, CoerceUnsized},
+		hash::{Hash, Hasher},
+		borrow::*,
+		cmp::Ordering,
+	},
 	derive_more::{Deref, DerefMut, Constructor},
 };
 

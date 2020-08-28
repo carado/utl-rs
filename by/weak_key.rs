@@ -31,3 +31,8 @@ impl<T> Hash for WeakKey<std::rc::Weak<T>> {
 	fn hash<H: Hasher>(&self, h: &mut H) { self.0.as_ptr().hash(h); }
 }
 
+impl<T, U> CoerceUnsized<WeakKey<U>> for WeakKey<T> where
+	T: ?Sized + CoerceUnsized<U>,
+	U: ?Sized,
+{}
+
