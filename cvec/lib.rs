@@ -99,7 +99,7 @@ impl<T> CVec<T> {
 		unsafe {
 			let pos = self.len;
 
-			self.grow_len(self.len + elems.size_hint().0);
+			self.grow_len(self.len + elems.size_hint().1.unwrap());
 
 			for (elem, i) in elems.zip(pos ..) {
 				debug_assert!(i < self.len);
@@ -171,7 +171,6 @@ impl<T> Extend<T> for CVec<T> {
 		unsafe {
 			let iter = iter.into_iter();
 
-			dbg!(iter.size_hint().0);
 			let mut alloc_cap = Self::len_cap(self.len + iter.size_hint().0);
 
 			self.resize_cap(self.cap(), alloc_cap, Alloc::grow);
