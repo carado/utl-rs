@@ -60,7 +60,7 @@ mod hash_map {
 
 	impl<'a, K: 'a, V: 'a, S: 'a> EntryExt for RawEntryMut<'a, K, V, S> {
 		type VacantEntry = RawVacantEntryMut<'a, K, V, S>;
-		type OccupiedEntry = RawOccupiedEntryMut<'a, K, V>;
+		type OccupiedEntry = RawOccupiedEntryMut<'a, K, V, S>;
 
 		impl_all_pairs!{}
 	}

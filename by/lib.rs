@@ -16,6 +16,7 @@ use {
 mod by_ptr;
 mod by_key;
 mod weak_key;
+mod bits;
 
-pub use {by_ptr::*, by_key::*, weak_key::*};
+pub use {by_ptr::*, by_key::*, weak_key::*, bits::*};
 
