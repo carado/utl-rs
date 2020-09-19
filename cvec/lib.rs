@@ -159,6 +159,30 @@ impl<T> CVec<T> {
 		} else { None }
 	}
 
+	pub fn resize_with(&mut self, to: usize, mut with: impl FnMut() -> T) {
+		unsafe {
+			let range = self.len() .. to;
+
+			use std::cmp::Ordering::*;
+
+			if let Some(resize) = match to.cmp(&self.len()) {
+				Less => Some(Alloc::shrink as _),
+				Greater => Some(Alloc::grow as _),
+				Equal => None,
+			} {
+				self.resize_cap(Self::len_cap(self.len()), Self::len_cap(to), resize);
+			}
+
+			for i in range {
+				self.data.as_ptr().add(i).write(with());
+			}
+		}
+	}
+
+	pub fn resize(&mut self, to: usize, value: T) where T: Clone {
+		self.resize_with(to, || value.clone());
+	}
+
 	pub fn as_non_null(&self) -> NonNull<T> { self.data }
 
 	pub fn as_ptr(&self) -> *mut T { self.data.as_ptr() }
