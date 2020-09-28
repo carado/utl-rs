@@ -297,6 +297,44 @@ impl<T> ops::DerefMut for CVec<T> {
 	}
 }
 
+impl<T: std::fmt::Debug> std::fmt::Debug for CVec<T> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) ->
+		Result<(), std::fmt::Error>
+	{
+		(**self).fmt(f)
+	}
+}
+
+impl<T: PartialEq> PartialEq for CVec<T> {
+	fn eq(&self, rhs: &Self) -> bool { **self == **rhs }
+	fn ne(&self, rhs: &Self) -> bool { **self != **rhs }
+}
+
+impl<T: Eq> Eq for CVec<T> {}
+
+impl<T: std::hash::Hash> std::hash::Hash for CVec<T> {
+	fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
+		(**self).hash(h);
+	}
+}
+
+impl<T: PartialOrd> PartialOrd for CVec<T> {
+	fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+		(**self).partial_cmp(&**rhs)
+	}
+
+	fn lt(&self, rhs: &Self) -> bool { **self <  **rhs }
+	fn le(&self, rhs: &Self) -> bool { **self <= **rhs }
+	fn gt(&self, rhs: &Self) -> bool { **self >  **rhs }
+	fn ge(&self, rhs: &Self) -> bool { **self >= **rhs }
+}
+
+impl<T: Ord> Ord for CVec<T> {
+	fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+		(**self).cmp(&**rhs)
+	}
+}
+
 #[test]
 fn test() {
 	let mut vec;
