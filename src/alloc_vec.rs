@@ -1,6 +1,8 @@
-use std::{collections::BinaryHeap, ops, mem::replace};
-use crate::prelude::*;
-use num_traits::AsPrimitive as As;
+use {
+	std::{collections::BinaryHeap, ops, mem::replace},
+	num_traits::AsPrimitive as As,
+	crate::rev_ord::RevOrd,
+};
 
 pub struct AllocVec<T, F = BinaryHeap<RevOrd<usize>>> {
 	data: Vec<T>,
