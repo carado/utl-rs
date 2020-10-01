@@ -1,10 +1,3 @@
-#![feature(
-	raw,
-	unsize,
-	allocator_api,
-	slice_ptr_get,
-)]
-
 use std::{
 	num::NonZeroUsize,
 	marker::{Unsize, PhantomData},

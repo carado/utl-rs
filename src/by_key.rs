@@ -1,6 +1,11 @@
-use super::*;
+use std::{
+	cmp::Ordering,
+	hash::{Hash, Hasher},
+	ops::{Deref, DerefMut},
+	borrow::{Borrow, BorrowMut},
+};
 
-#[derive(Default, Clone, Copy, Debug, Constructor)]
+#[derive(Default, Clone, Copy, Debug, derive_more::Constructor)]
 pub struct ByKey<K, V> {
 	pub key: K,
 	pub val: V,
@@ -36,6 +41,10 @@ impl<K: Hash, V> Hash for ByKey<K, V> {
 
 impl<K, V> Borrow<K> for ByKey<K, V> {
 	fn borrow(&self) -> &K { &self.key }
+}
+
+impl<K, V> BorrowMut<K> for ByKey<K, V> {
+	fn borrow_mut(&mut self) -> &mut K { &mut self.key }
 }
 
 impl<K, V> Deref for ByKey<K, V> {

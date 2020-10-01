@@ -1,4 +1,7 @@
-use super::*;
+use {
+	std::{hash::{Hash, Hasher}, ops::CoerceUnsized},
+	derive_more::{Deref, DerefMut},
+};
 
 #[derive(Clone, Deref, DerefMut)]
 pub struct WeakKey<T: ?Sized>(pub T);

@@ -1,7 +1,3 @@
-#![feature(
-	trait_alias,
-)]
-
 pub mod nop;
 
 pub use self::nop::Map as Nop;

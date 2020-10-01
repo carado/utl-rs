@@ -1,7 +1,3 @@
-#![feature(
-	hash_raw_entry,
-)]
-
 pub trait EntryExt {
 	type VacantEntry;
 	type OccupiedEntry;

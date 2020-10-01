@@ -2,13 +2,12 @@
 
 Various (not very tested and entirely undocumented) utilities for Rust.
 
-Can be used as their own crates, or just `use ::utl::*` to re-export useful traits, types, and modules to the global scope.
+`use ::utl::*` re-exports useful traits, types, and modules to the global scope.
 
 * `bits-ext` implements various operations on primitive integer number types
-* `by`:
-	* `ByPtr` to hash/eq/compare a type by the address (rather than vuel) to which it derefs
-	* `ByKey<K, V>` to hash/eq/compare only by `K`, not by `V`
-	* `WeakKey` to hash/eq/compare a `std::sync::Weak` or `std::rc::Weak` by its pointer
+* `ByPtr` to hash/eq/compare a type by the address (rather than vuel) to which it derefs
+* `ByKey<K, V>` to hash/eq/compare only by `K`, not by `V`
+* `WeakKey` to hash/eq/compare a `std::sync::Weak` or `std::rc::Weak` by its pointer
 * `cvec`: an alternative to `std::vec::Vec` that takes only two words and is a bit faster on `push`, but always has capacity `ceil(log2(length))` (and thus may reallocate more often).
 * `entry-ext`: to be able to do `.occupied()` or `.vacant()` on hashmap entries
 * `just-hash`: to be able to do `hash_map.hasher().just_hash(&value)`

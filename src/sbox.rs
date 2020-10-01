@@ -1,9 +1,3 @@
-#![feature(
-	raw,
-	unsize,
-	untagged_unions,
-)]
-
 use std::{*, raw::TraitObject, mem::ManuallyDrop};
 
 #[repr(C)]

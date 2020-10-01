@@ -1,18 +1,13 @@
-[workspace]
+[package]
+name = "utl"
+version = "0.1.0"
+authors = ["carado <carado@carado.moe>"]
+edition = "2018"
 
-members = [
-	"utl",
-	"cvec",
-	"sbox",
-	"entry-ext",
-	"just-hash",
-	"by",
-	"atomic",
-	"bits-ext",
-	"on-drop",
-	"rev-ord",
-	"maps",
-	"range-ext",
-	"thin",
-]
+[dependencies]
+num-traits = "0.2.12"
+derive_more = "0.99"
+rustc-hash = "1.1"
+fnv = "1.0"
+half = "1.6"
 

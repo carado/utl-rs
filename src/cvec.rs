@@ -1,9 +1,3 @@
-#![feature(
-	allocator_api,
-	trusted_len,
-	extend_one,
-)]
-
 use std::{
 	ptr::{self, NonNull},
 	iter::{IntoIterator, Iterator, TrustedLen},

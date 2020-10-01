@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, hash};
+use std::{cmp::Ordering, hash::{Hash, Hasher}};
 
 #[derive(Clone, Copy)]
 pub struct ByBits<T>(pub T);
@@ -21,8 +21,8 @@ macro_rules! impl_by_bits {
 
 		impl Eq for ByBits<$ty> {}
 
-		impl hash::Hash for ByBits<$ty> {
-			fn hash<H: hash::Hasher>(&self, h: &mut H) { self.0.to_bits().hash(h); }
+		impl Hash for ByBits<$ty> {
+			fn hash<H: Hasher>(&self, h: &mut H) { self.0.to_bits().hash(h); }
 		}
 
 		impl PartialOrd for ByBits<$ty> {

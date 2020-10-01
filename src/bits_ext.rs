@@ -1,7 +1,3 @@
-#![feature(
-	trait_alias,
-)]
-
 use {std::{ops::*, mem::size_of}, num_traits::*};
 
 pub use num_traits;

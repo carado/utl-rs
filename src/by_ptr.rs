@@ -1,4 +1,4 @@
-use super::*;
+use std::{cmp::Ordering, hash::{Hash, Hasher}, ops::CoerceUnsized};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ByPtr<T: ?Sized>(pub T);
