@@ -1,7 +1,7 @@
 use {
 	std::{collections::BinaryHeap, ops, mem::replace},
-	num_traits::AsPrimitive as As,
 	crate::rev_ord::RevOrd,
+	num_traits::NumCast,
 };
 
 pub struct AllocVec<T, F = BinaryHeap<RevOrd<usize>>> {
@@ -9,9 +9,9 @@ pub struct AllocVec<T, F = BinaryHeap<RevOrd<usize>>> {
 	free: F,
 }
 
-pub trait Index = 'static + Copy + Ord + As<usize> where usize: As<Self>;
+pub trait Index = 'static + Copy + Ord + num_traits::NumCast;
 
-pub trait FreeSet: Default where usize: As<Self::Index> {
+pub trait FreeSet: Default {
 	type Index: Index;
 	fn push(&mut self, value: Self::Index);
 	fn pop(&mut self) -> Option<Self::Index>;
@@ -19,19 +19,21 @@ pub trait FreeSet: Default where usize: As<Self::Index> {
 	fn len(&self) -> usize;
 }
 
+pub unsafe trait FreeSetTrusted: FreeSet {}
+
 impl<T, F: FreeSet> AllocVec<T, F> where F::Index: Index {
 	pub fn new() -> Self { <_>::default() }
 
 	pub fn alloc(&mut self, value: T) -> F::Index {
 		match self.free.pop() {
 			Some(id) => {
-				self.data[id.as_()] = value;
+				self.data[id.to_usize().unwrap()] = value;
 				id
 			},
 			None => {
 				let id = self.data.len();
 				self.data.push(value);
-				id.as_()
+				NumCast::from(id).unwrap()
 			},
 		}
 	}
@@ -44,24 +46,24 @@ impl<T, F: FreeSet> AllocVec<T, F> where F::Index: Index {
 
 	pub fn raw_mut(&mut self) -> &mut [T] { &mut self.data }
 
-	pub fn raw_len(&self) -> F::Index { self.data.len().as_() }
+	pub fn raw_len(&self) -> F::Index { NumCast::from(self.data.len()).unwrap() }
 
 	pub unsafe fn get_unchecked(&self, index: F::Index) -> &T {
-		self.data.get_unchecked(index.as_())
+		self.data.get_unchecked(index.to_usize().unwrap())
 	}
 
 	pub unsafe fn get_unchecked_mut(&mut self, index: F::Index) -> &mut T {
-		self.data.get_unchecked_mut(index.as_())
+		self.data.get_unchecked_mut(index.to_usize().unwrap())
 	}
 
 	pub fn count(&self) -> usize { self.data.len() - self.free.len() }
 
 	pub fn get(&self, index: F::Index) -> Option<&T> {
-		self.data.get(index.as_())
+		self.data.get(index.to_usize().unwrap())
 	}
 
 	pub fn get_mut(&mut self, index: F::Index) -> Option<&mut T> {
-		self.data.get_mut(index.as_())
+		self.data.get_mut(index.to_usize().unwrap())
 	}
 
 	pub fn defragment(
@@ -75,10 +77,12 @@ impl<T, F: FreeSet> AllocVec<T, F> where F::Index: Index {
 
 			let mut last_free = free.len().wrapping_sub(1);
 
-			'relocate: for dst in free.iter().copied().map(As::as_) {
+			'relocate: for dst in free.iter().copied() {
+				let dst = dst.to_usize().unwrap();
+
 				if dst + 1 >= data.len() { break 'relocate; }
 
-				while data.len() - 1 == free[last_free].as_() {
+				while data.len() - 1 == free[last_free].to_usize().unwrap() {
 					if dst + 1 >= data.len() { break 'relocate; }
 					last_free -= 1;
 					data.pop().unwrap();
@@ -86,7 +90,11 @@ impl<T, F: FreeSet> AllocVec<T, F> where F::Index: Index {
 
 				let value = data.pop().unwrap();
 
-				data[dst] = relocate(value, data.len().as_(), dst.as_());
+				data[dst] = relocate(
+					value,
+					NumCast::from(data.len()).unwrap(),
+					NumCast::from(dst).unwrap(),
+				);
 			}
 
 			data.truncate(shrink_to);
@@ -96,10 +104,19 @@ impl<T, F: FreeSet> AllocVec<T, F> where F::Index: Index {
 	}
 }
 
-impl<I> FreeSet for Vec<I> where
-	I: As<usize> + Ord + Copy,
-	usize: As<I>,
-{
+unsafe impl FreeSetTrusted for Vec<u32> {}
+unsafe impl FreeSetTrusted for Vec<u64> {}
+unsafe impl FreeSetTrusted for Vec<usize> {}
+
+unsafe impl FreeSetTrusted for super::CVec<u32> {}
+unsafe impl FreeSetTrusted for super::CVec<u64> {}
+unsafe impl FreeSetTrusted for super::CVec<usize> {}
+
+unsafe impl FreeSetTrusted for BinaryHeap<RevOrd<u32>> {}
+unsafe impl FreeSetTrusted for BinaryHeap<RevOrd<u64>> {}
+unsafe impl FreeSetTrusted for BinaryHeap<RevOrd<usize>> {}
+
+impl<I: Index> FreeSet for Vec<I> {
 	type Index = I;
 	fn push(&mut self, value: I) { Vec::push(self, value); }
 	fn pop(&mut self) -> Option<I> { Vec::pop(self) }
@@ -111,10 +128,19 @@ impl<I> FreeSet for Vec<I> where
 	}
 }
 
-impl<I> FreeSet for BinaryHeap<RevOrd<I>> where
-	I: As<usize> + Ord + Copy,
-	usize: As<I>,
-{
+impl<I: Index> FreeSet for super::CVec<I> {
+	type Index = I;
+	fn push(&mut self, value: I) { super::CVec::push(self, value); }
+	fn pop(&mut self) -> Option<I> { super::CVec::pop(self) }
+	fn len(&self) -> usize { (**self).len() }
+	fn with_sorted_clear(&mut self, f: impl FnOnce(&[I])) {
+		self.sort_unstable();
+		f(&self);
+		*self = super::CVec::new();
+	}
+}
+
+impl<I: Index> FreeSet for BinaryHeap<RevOrd<I>> {
 	type Index = I;
 	fn push(&mut self, value: I) { BinaryHeap::push(self, RevOrd(value)); }
 	fn pop(&mut self) -> Option<I> { BinaryHeap::pop(self).map(|RevOrd(i)| i) }
@@ -132,13 +158,17 @@ impl<T, F: FreeSet> ops::Index<F::Index> for AllocVec<T, F> where
 	F::Index: Index,
 {
 	type Output = T;
-	fn index(&self, index: F::Index) -> &T { &self.data[index.as_()] }
+	fn index(&self, index: F::Index) -> &T {
+		&self.data[index.to_usize().unwrap()]
+	}
 }
 
 impl<T, F: FreeSet> ops::IndexMut<F::Index> for AllocVec<T, F> where
 	F::Index: Index,
 {
-	fn index_mut(&mut self, i: F::Index) -> &mut T { &mut self.data[i.as_()] }
+	fn index_mut(&mut self, i: F::Index) -> &mut T {
+		&mut self.data[i.to_usize().unwrap()]
+	}
 }
 
 impl<T, F: FreeSet> Default for AllocVec<T, F> where
