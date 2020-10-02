@@ -11,7 +11,7 @@ use {
 
 type EntryHash = u32;
 
-pub struct IDMap<
+pub struct DedupVec<
 	K,
 	V,
 	F: FreeSetTrusted = std::collections::BinaryHeap<RevOrd<usize>>,
@@ -23,7 +23,7 @@ pub struct IDMap<
 
 struct Entry<V> { usage: NonZeroUsize, hash: u64, value: V }
 
-impl<K, V, F: FreeSetTrusted, S: Default> Default for IDMap<K, V, F, S> {
+impl<K, V, F: FreeSetTrusted, S: Default> Default for DedupVec<K, V, F, S> {
 	fn default() -> Self {
 		Self {
 			mapped: <_>::default(),
@@ -32,7 +32,7 @@ impl<K, V, F: FreeSetTrusted, S: Default> Default for IDMap<K, V, F, S> {
 	}
 }
 
-impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> IDMap<K, V, F, S> {
+impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 	pub fn new() -> Self where S: Default { Self::default() }
 
 	pub fn with_hasher(hasher: S) -> Self {
@@ -221,14 +221,14 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> IDMap<K, V, F, S> {
 	}
 }
 
-impl<K, V, F: FreeSetTrusted, S> Index<F::Index> for IDMap<K, V, F, S> {
+impl<K, V, F: FreeSetTrusted, S> Index<F::Index> for DedupVec<K, V, F, S> {
 	type Output = V;
 	fn index(&self, id: F::Index) -> &V {
 		&unsafe { &*self.entries[id].as_ref().unwrap().get() }.value
 	}
 }
 
-impl<K, V, F: FreeSetTrusted, S> IndexMut<F::Index> for IDMap<K, V, F, S> {
+impl<K, V, F: FreeSetTrusted, S> IndexMut<F::Index> for DedupVec<K, V, F, S> {
 	fn index_mut(&mut self, id: F::Index) -> &mut V {
 		&mut unsafe { &mut *self.entries[id].as_mut().unwrap().get() }.value
 	}

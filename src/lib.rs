@@ -27,8 +27,7 @@ pub mod range_ext;
 pub mod thin;
 pub mod unreach;
 pub mod alloc_vec;
-pub mod id_map;
-//pub mod non_zero;
+pub mod dedup_vec;
 
 pub use crate::{
 	cvec::CVec,
@@ -44,6 +43,5 @@ pub use crate::{
 	range_ext::*,
 	thin::*,
 	unreach::*,
-	//non_zero::NonZero,
 };
 
