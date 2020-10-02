@@ -79,7 +79,7 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 		(by_key.value, &mut by_key.key, value)
 	}
 
-	pub fn get<Q: maps::BorrowKey<K>>(&self, pre_key: &Q) ->
+	pub fn find<Q: maps::BorrowKey<K>>(&self, pre_key: &Q) ->
 		Option<(F::Index, &K, &V)>
 	{
 		let hash = self.mapped.hasher().just_hash(pre_key);
@@ -91,6 +91,14 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 				let entry = &*self.entries.get_unchecked(*id).unsafe_unwrap_ref().get();
 				(*id, key, &entry.value)
 			})
+	}
+
+	pub fn get(&self, id: F::Index) -> Option<&V> {
+		Some(&unsafe { &*self.entries.get(id)?.as_ref()?.get() }.value)
+	}
+
+	pub fn get_mut(&mut self, id: F::Index) -> Option<&mut V> {
+		Some(&mut unsafe { &mut *self.entries.get_mut(id)?.as_mut()?.get() }.value)
 	}
 
 	pub fn remove(&mut self, id: F::Index) -> Option<V> {
