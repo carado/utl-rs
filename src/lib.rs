@@ -27,6 +27,7 @@ pub mod range_ext;
 pub mod thin;
 pub mod alloc_vec;
 pub mod unreach;
+pub mod id_map;
 
 pub use crate::{
 	cvec::CVec,
