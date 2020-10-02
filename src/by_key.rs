@@ -8,7 +8,7 @@ use std::{
 #[derive(Default, Clone, Copy, Debug, derive_more::Constructor)]
 pub struct ByKey<K, V> {
 	pub key: K,
-	pub val: V,
+	pub value: V,
 }
 
 impl<K: PartialEq, V> PartialEq for ByKey<K, V> {
@@ -49,10 +49,10 @@ impl<K, V> BorrowMut<K> for ByKey<K, V> {
 
 impl<K, V> Deref for ByKey<K, V> {
 	type Target = V;
-	fn deref(&self) -> &V { &self.val }
+	fn deref(&self) -> &V { &self.value }
 }
 
 impl<K, V> DerefMut for ByKey<K, V> {
-	fn deref_mut(&mut self) -> &mut V { &mut self.val }
+	fn deref_mut(&mut self) -> &mut V { &mut self.value }
 }
 
