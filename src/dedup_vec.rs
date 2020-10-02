@@ -9,8 +9,6 @@ use {
 	num_traits::NumCast,
 };
 
-type EntryHash = u32;
-
 pub struct DedupVec<
 	K,
 	V,
