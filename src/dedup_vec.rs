@@ -147,29 +147,47 @@ impl<K: Hash + Eq, V, I: TrustedIndex, S: BuildHasher> DedupVec<K, V, I, S> {
 		})
 	}
 
+	fn decr_usage(occup: &mut Occup<V>) -> bool {
+		NonZeroUsize::new(occup.usage.get() - 1).map(|v| occup.usage = v).is_none()
+	}
+
+	unsafe fn remove_mapped(
+		mapped: &mut HashMap<ByKey<K, I>, (), S>,
+		entry: &mut Entry<V>,
+		next_free: &mut I,
+		id: I,
+	) -> Option<V> {
+		mapped
+			.raw_entry_mut()
+			.from_hash(entry.hash_or_next_free, |by| by.value == id)
+			.occupied().unsafe_unwrap()
+			.remove();
+
+		entry.hash_or_next_free = next_free.to_u64().unwrap();
+		*next_free = id;
+
+		Some(entry.occup.take().unsafe_unwrap().value.into_inner())
+	}
+
 	pub fn remove(&mut self, id: I) -> Option<Option<V>> {
-		let entry = self.entries.get_mut(id.to_usize()?)?;
-		let occup = entry.occup.as_mut()?;
+		unsafe {
+			let en = self.entries.get_mut(id.to_usize()?)?;
 
-		match NonZeroUsize::new(occup.usage.get() - 1) {
-			Some(sub_usage) => {
-				occup.usage = sub_usage;
+			if Self::decr_usage(en.occup.as_mut()?) {
+				Some(Self::remove_mapped(&mut self.mapped, en, &mut self.next_free, id))
+			} else {
 				Some(None)
-			},
+			}
+		}
+	}
 
-			None => unsafe {
-				self.mapped
-					.raw_entry_mut()
-					.from_hash(entry.hash_or_next_free, |by| by.value == id)
-					.occupied()
-					.unsafe_unwrap()
-					.remove();
+	pub unsafe fn remove_unchecked(&mut self, id: I) -> Option<V> {
+		let en = self.entries.get_unchecked_mut(id.to_usize().unsafe_unwrap());
 
-				entry.hash_or_next_free = self.next_free.to_u64().unwrap();
-				self.next_free = id;
-
-				Some(Some(entry.occup.take().unsafe_unwrap().value.into_inner()))
-			},
+		if Self::decr_usage(en.occup.unsafe_unwrap_mut()) {
+			Self::remove_mapped(&mut self.mapped, en, &mut self.next_free, id)
+		} else {
+			None
 		}
 	}
 
