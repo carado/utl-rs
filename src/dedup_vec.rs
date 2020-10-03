@@ -1,56 +1,66 @@
 use {
-	super::{*, alloc_vec::{AllocVec, FreeSetTrusted}},
+	super::*,
 	std::{
 		hash::{Hash, BuildHasher},
 		ops::{Index, IndexMut},
 		collections::HashMap,
 		num::NonZeroUsize,
+		cell::UnsafeCell,
+		mem::{forget, replace},
 	},
-	num_traits::NumCast,
+	num_traits::{NumCast, PrimInt},
 };
 
-pub struct DedupVec<
-	K,
-	V,
-	F: FreeSetTrusted = std::collections::BinaryHeap<RevOrd<usize>>,
-	S = maps::std::BuildHasher,
-> {
-	mapped: HashMap<ByKey<K, F::Index>, (), S>,
-	entries: AllocVec<Option<std::cell::UnsafeCell<Entry<V>>>, F>,
+pub struct DedupVec<K, V, I = usize, S = maps::std::BuildHasher> {
+	mapped: HashMap<ByKey<K, I>, (), S>,
+	next_free: I,
+	entries: CVec<Entry<V>>,
 }
 
-struct Entry<V> { usage: NonZeroUsize, hash: u64, value: V }
+pub unsafe trait TrustedIndex: NumCast + PrimInt {}
+unsafe impl TrustedIndex for u16 {}
+unsafe impl TrustedIndex for u32 {}
+unsafe impl TrustedIndex for u64 {}
+unsafe impl TrustedIndex for usize {}
 
-impl<K, V, F: FreeSetTrusted, S: Default> Default for DedupVec<K, V, F, S> {
+struct Entry<V> { hash_or_next_free: u64, occup: Option<Occup<V>> }
+
+struct Occup<V> { usage: NonZeroUsize, value: UnsafeCell<V> }
+
+pub fn no_free<I: TrustedIndex>() -> I { I::max_value() }
+
+impl<K, V, I: TrustedIndex, S: Default> Default for DedupVec<K, V, I, S> {
 	fn default() -> Self {
 		Self {
 			mapped: <_>::default(),
+			next_free: no_free(),
 			entries: <_>::default(),
 		}
 	}
 }
 
-impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
+impl<K: Hash + Eq, V, I: TrustedIndex, S: BuildHasher> DedupVec<K, V, I, S> {
 	pub fn new() -> Self where S: Default { Self::default() }
 
 	pub fn with_hasher(hasher: S) -> Self {
 		Self {
 			mapped: HashMap::with_hasher(hasher),
+			next_free: no_free(),
 			entries: <_>::default(),
 		}
 	}
 
-	fn incr_usage(entry: &mut Entry<V>) {
-		let wrapping = entry.usage.get().wrapping_add(1);
-		entry.usage = NonZeroUsize::new(wrapping).expect("usage overflow");
+	fn incr_usage(occup: &mut Occup<V>) {
+		let wrapping = occup.usage.get().wrapping_add(1);
+		occup.usage = NonZeroUsize::new(wrapping).expect("usage overflow");
 	}
 	
 	pub fn insert(
 		&mut self,
 		pre_key: &impl maps::BorrowKey<K>,
 		make_value: impl FnOnce() -> (K, V),
-	) -> (F::Index, &mut K, &mut V) {
-		let entries = &mut self.entries;
+	) -> (I, &mut K, &mut V) {
+		let Self { entries, next_free, .. } = self;
 
 		let hash = self.mapped.hasher().just_hash(&pre_key);
 
@@ -58,39 +68,57 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 			.from_hash(hash, |k| k.key.borrow() == pre_key)
 			.and_modify(|k, ()| unsafe {
 				Self::incr_usage(&mut *entries
-					.get_unchecked_mut(k.value)
-					.unsafe_unwrap_mut()
-					.get()
+					.get_unchecked_mut(k.value.to_usize().unsafe_unwrap())
+					.occup.unsafe_unwrap_mut()
 				)
 			})
 			.or_insert_with(|| {
 				let (key, value) = make_value();
-				let usage = unsafe { NonZeroUsize::new_unchecked(1) };
-				let id = entries.alloc(Some(Entry { usage, hash, value }.into()));
+
+				let occup = Some(Occup {
+					usage: unsafe { NonZeroUsize::new_unchecked(1) },
+					value: value.into(),
+				});
+
+				let id;
+				
+				if *next_free == no_free() {
+					id = <I as NumCast>::from(entries.len()).expect("index overflow");
+					entries.push(Entry { hash_or_next_free: hash, occup });
+				} else {
+					id = *next_free;
+
+					let cell = unsafe {
+						entries.get_unchecked_mut(next_free.to_usize().unsafe_unwrap())
+					};
+
+					*next_free =
+						NumCast::from(replace(&mut cell.hash_or_next_free, hash)).unwrap();
+
+					forget(replace(&mut cell.occup, occup));
+				};
+
 				(ByKey::new(key, id), ())
 			});
 
 		let value = unsafe {
-			&mut (&mut *entries
-				.get_unchecked_mut(by_key.value)
-				.unsafe_unwrap_mut()
-				.get()
-			).value
+			&mut *entries
+				.get_unchecked_mut(by_key.value.to_usize().unsafe_unwrap())
+				.occup.unsafe_unwrap_mut()
+				.value.get()
 		};
 
 		(by_key.value, &mut by_key.key, value)
 	}
 
-	pub fn duplicate(&mut self, id: F::Index) -> Option<&mut V> {
-		unsafe {
-			let entry = &mut *self.entries.get_mut(id)?.as_mut()?.get();
-			Self::incr_usage(entry);
-			Some(&mut entry.value)
-		}
+	pub fn duplicate(&mut self, id: I) -> Option<&mut V> {
+		let occup = self.entries.get_mut(id.to_usize()?)?.occup.as_mut()?;
+		Self::incr_usage(occup);
+		Some(unsafe { &mut *occup.value.get() })
 	}
 
 	pub fn find<Q: maps::BorrowKey<K>>(&self, pre_key: &Q) ->
-		Option<(F::Index, &K, &V)>
+		Option<(I, &K, &V)>
 	{
 		let hash = self.mapped.hasher().just_hash(pre_key);
 
@@ -98,61 +126,73 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 			.raw_entry()
 			.from_hash(hash, |by| by.key.borrow() == pre_key)
 			.map(|(ByKey { key, value: id }, _)| unsafe {
-				let entry = &*self.entries.get_unchecked(*id).unsafe_unwrap_ref().get();
-				(*id, key, &entry.value)
+				let value = &*self.entries
+					.get_unchecked(id.to_usize().unsafe_unwrap())
+					.occup.unsafe_unwrap_ref()
+					.value.get();
+
+				(*id, key, value)
 			})
 	}
 
-	pub fn get(&self, id: F::Index) -> Option<&V> {
-		Some(&unsafe { &*self.entries.get(id)?.as_ref()?.get() }.value)
+	pub fn get(&self, id: I) -> Option<&V> {
+		Some(unsafe {
+			&*self.entries.get(id.to_usize()?)?.occup.as_ref()?.value.get()
+		})
 	}
 
-	pub fn get_mut(&mut self, id: F::Index) -> Option<&mut V> {
-		Some(&mut unsafe { &mut *self.entries.get_mut(id)?.as_mut()?.get() }.value)
+	pub fn get_mut(&mut self, id: I) -> Option<&mut V> {
+		Some(unsafe {
+			&mut *self.entries.get_mut(id.to_usize()?)?.occup.as_mut()?.value.get()
+		})
 	}
 
-	pub fn remove(&mut self, id: F::Index) -> Option<Option<V>> {
-		unsafe {
-			let opt = self.entries.get_mut(id)?;
-			let entry = &mut *opt.as_mut()?.get();
+	pub fn remove(&mut self, id: I) -> Option<Option<V>> {
+		let entry = self.entries.get_mut(id.to_usize()?)?;
+		let occup = entry.occup.as_mut()?;
 
-			match NonZeroUsize::new(entry.usage.get() - 1) {
-				Some(sub_usage) => {
-					entry.usage = sub_usage;
-					Some(None)
-				},
+		match NonZeroUsize::new(occup.usage.get() - 1) {
+			Some(sub_usage) => {
+				occup.usage = sub_usage;
+				Some(None)
+			},
 
-				None => {
-					self.mapped
-						.raw_entry_mut()
-						.from_hash(entry.hash.as_(), |by| by.value == id)
-						.occupied()
-						.unsafe_unwrap()
-						.remove();
+			None => unsafe {
+				self.mapped
+					.raw_entry_mut()
+					.from_hash(entry.hash_or_next_free, |by| by.value == id)
+					.occupied()
+					.unsafe_unwrap()
+					.remove();
 
-					Some(Some(opt.take().unsafe_unwrap().into_inner().value))
-				},
-			}
+				entry.hash_or_next_free = self.next_free.to_u64().unwrap();
+				self.next_free = id;
+
+				Some(Some(entry.occup.take().unsafe_unwrap().value.into_inner()))
+			},
 		}
 	}
 
-	pub unsafe fn get_unchecked(&self, id: F::Index) -> &V {
-		&(&*self.entries.get_unchecked(id).unsafe_unwrap_ref().get()).value
+	pub unsafe fn get_unchecked(&self, id: I) -> &V {
+		&*self.entries
+			.get_unchecked(id.to_usize().unsafe_unwrap())
+			.occup.unsafe_unwrap_ref()
+			.value.get()
 	}
 
-	pub unsafe fn get_unchecked_mut(&mut self, id: F::Index) -> &mut V {
-		&mut
-			(&mut *self.entries.get_unchecked_mut(id).unsafe_unwrap_mut().get()).value
+	pub unsafe fn get_unchecked_mut(&mut self, id: I) -> &mut V {
+		&mut *self.entries
+			.get_unchecked_mut(id.to_usize().unsafe_unwrap())
+			.occup.unsafe_unwrap_mut()
+			.value.get()
 	}
 
-	pub fn usage(&self, id: F::Index) -> usize {
-		self.entries
-			.get(id)
-			.and_then(|o| o.as_ref())
-			.map_or(0, |e| unsafe { &*e.get() }.usage.get())
+	pub fn usage(&self, id: I) -> usize {
+		(|| Some(self.entries.get(id.to_usize()?)?.occup.as_ref()?.usage.get()))()
+			.unwrap_or(0)
 	}
 
-	pub fn key_entries(&self) -> impl Iterator<Item = (F::Index, &K, &V)> {
+	pub fn key_entries(&self) -> impl Iterator<Item = (I, &K, &V)> {
 		self.mapped
 			.keys()
 			.map(move |by| unsafe {
@@ -162,7 +202,7 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 	}
 
 	pub fn key_entries_mut(&mut self) ->
-		impl Iterator<Item = (F::Index, &K, &mut V)>
+		impl Iterator<Item = (I, &K, &mut V)>
 	{
 		let entries = &mut self.entries;
 
@@ -170,63 +210,69 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 			.keys()
 			.map(move |by| unsafe {
 				let id = by.value;
-				let ent = &mut *entries.get_unchecked(id).unsafe_unwrap_ref().get();
-				(id, &by.key, &mut ent.value)
+				let value = &mut *entries
+					.get_unchecked(id.to_usize().unsafe_unwrap())
+					.occup.unsafe_unwrap_ref()
+					.value.get();
+
+				(id, &by.key, value)
 			})
 	}
 
-	pub fn at(&self, id: F::Index) -> Option<(&K, &V)> {
+	pub fn at(&self, id: I) -> Option<(&K, &V)> {
 		unsafe {
-			let entry = &*self.entries.get(id)?.as_ref()?.get();
-			Some((Self::key_fn(id, entry, &self.mapped)(), &entry.value))
+			let entry = self.entries.get(id.to_usize()?)?;
+			let value = &*entry.occup.as_ref()?.value.get();
+			Some((Self::key_fn(id, entry, &self.mapped)(), value))
 		}
 	}
 
-	pub fn at_mut(&mut self, id: F::Index) -> Option<(&K, &mut V)> {
+	pub fn at_mut(&mut self, id: I) -> Option<(&K, &mut V)> {
 		unsafe {
-			let entry = &mut *self.entries.get(id)?.as_ref()?.get();
-			Some((Self::key_fn(id, entry, &self.mapped)(), &mut entry.value))
+			let entry = self.entries.get_mut(id.to_usize()?)?;
+			let value = &mut *entry.occup.as_mut()?.value.get();
+			Some((Self::key_fn(id, entry, &self.mapped)(), value))
 		}
 	}
 
 	pub fn entries<'a>(&'a self) ->
-		impl Iterator<Item = (F::Index, &'a V, impl FnOnce() -> &'a K)>
+		impl Iterator<Item = (I, &'a V, impl FnOnce() -> &'a K)>
 	{
 		let mapped = &self.mapped;
 
 		self.entries
-			.raw().iter()
+			.iter()
 			.zip(0..)
-			.filter_map(move |(e, id)| unsafe {
+			.filter_map(move |(entry, id)| unsafe {
 				let id = NumCast::from(id).unwrap();
-				let entry = &*e.as_ref()?.get();
+				let value = &*entry.occup.as_ref()?.value.get();
 				let key = Self::key_fn(id, entry, mapped);
-				Some((id, &entry.value, key))
+				Some((id, value, key))
 			})
 	}
 
 	pub fn entries_mut<'a>(&'a mut self) ->
-		impl Iterator<Item = (F::Index, &'a mut V, impl FnOnce() -> &'a K)>
+		impl Iterator<Item = (I, &'a mut V, impl FnOnce() -> &'a K)>
 	{
 		let mapped = &self.mapped;
 
 		self.entries
-			.raw_mut().iter_mut()
+			.iter_mut()
 			.zip(0..)
-			.filter_map(move |(e, id)| unsafe {
+			.filter_map(move |(entry, id)| unsafe {
 				let id = NumCast::from(id).unwrap();
-				let entry = &mut *e.as_ref()?.get();
+				let value = &mut *entry.occup.as_ref()?.value.get();
 				let key = Self::key_fn(id, entry, mapped);
-				Some((id, &mut entry.value, key))
+				Some((id, value, key))
 			})
 	}
 
 	unsafe fn key_fn<'a>(
-		id: F::Index,
+		id: I,
 		entry: &Entry<V>,
-		mapped: &'a HashMap<ByKey<K, F::Index>, (), S>,
+		mapped: &'a HashMap<ByKey<K, I>, (), S>,
 	) -> impl FnOnce() -> &'a K {
-		let hash = entry.hash;
+		let hash = entry.hash_or_next_free;
 
 		move || &mapped
 			.raw_entry()
@@ -237,16 +283,18 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 	}
 }
 
-impl<K, V, F: FreeSetTrusted, S> Index<F::Index> for DedupVec<K, V, F, S> {
+impl<K, V, I: TrustedIndex, S> Index<I> for DedupVec<K, V, I, S> {
 	type Output = V;
-	fn index(&self, id: F::Index) -> &V {
-		&unsafe { &*self.entries[id].as_ref().unwrap().get() }.value
+	fn index(&self, id: I) -> &V {
+		let id = id.to_usize().unwrap();
+		unsafe { &*self.entries[id].occup.as_ref().unwrap().value.get() }
 	}
 }
 
-impl<K, V, F: FreeSetTrusted, S> IndexMut<F::Index> for DedupVec<K, V, F, S> {
-	fn index_mut(&mut self, id: F::Index) -> &mut V {
-		&mut unsafe { &mut *self.entries[id].as_mut().unwrap().get() }.value
+impl<K, V, I: TrustedIndex, S> IndexMut<I> for DedupVec<K, V, I, S> {
+	fn index_mut(&mut self, id: I) -> &mut V {
+		let id = id.to_usize().unwrap();
+		unsafe { &mut *self.entries[id].occup.as_mut().unwrap().value.get() }
 	}
 }
 
