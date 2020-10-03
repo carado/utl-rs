@@ -4,7 +4,7 @@ use std::{
 	mem::{size_of, forget, replace},
 	slice,
 	ops,
-	alloc::{AllocErr, Layout, Global as Alloc, AllocRef},
+	alloc::{AllocError, Layout, Global as Alloc, AllocRef},
 };
 
 #[repr(C)]
@@ -64,8 +64,8 @@ impl<T> CVec<T> {
 
 	unsafe fn resize_cap(
 		&mut self, old_cap: usize, new_cap: usize,
-		f: unsafe fn(&mut Alloc, NonNull<u8>, Layout, Layout) ->
-			Result<NonNull<[u8]>, AllocErr>,
+		f: unsafe fn(&Alloc, NonNull<u8>, Layout, Layout) ->
+			Result<NonNull<[u8]>, AllocError>,
 	) {
 		debug_assert!(new_cap.count_ones() <= 1 && old_cap.count_ones() <= 1);
 		self.data = f(

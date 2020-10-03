@@ -13,11 +13,12 @@ use {
 
 pub struct DedupVec<K, V, I = usize, S = maps::std::BuildHasher> {
 	mapped: HashMap<ByKey<K, I>, (), S>,
-	next_free: I,
 	entries: CVec<Entry<V>>,
+	next_free: I,
 }
 
 pub unsafe trait TrustedIndex: NumCast + PrimInt {}
+unsafe impl TrustedIndex for u8 {}
 unsafe impl TrustedIndex for u16 {}
 unsafe impl TrustedIndex for u32 {}
 unsafe impl TrustedIndex for u64 {}
