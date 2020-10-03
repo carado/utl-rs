@@ -41,10 +41,8 @@ impl<K: Hash + Eq, V, F: FreeSetTrusted, S: BuildHasher> DedupVec<K, V, F, S> {
 	}
 
 	fn incr_usage(entry: &mut Entry<V>) {
-		unsafe {
-			let wrapping = entry.usage.get().wrapping_add(1);
-			entry.usage = NonZeroUsize::new(wrapping).expect("usage overflow");
-		}
+		let wrapping = entry.usage.get().wrapping_add(1);
+		entry.usage = NonZeroUsize::new(wrapping).expect("usage overflow");
 	}
 	
 	pub fn insert(
