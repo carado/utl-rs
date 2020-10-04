@@ -270,6 +270,9 @@ impl<T> Drop for CVec<T> {
 	}
 }
 
+unsafe impl<T: Send> Send for CVec<T> {}
+unsafe impl<T: Sync> Sync for CVec<T> {}
+
 impl<T: Clone> Clone for CVec<T> {
 	fn clone(&self) -> Self {
 		let mut v = Self::new();
