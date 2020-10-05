@@ -223,6 +223,18 @@ impl<T> IntoIterator for CVec<T> {
 	fn into_iter(self) -> IntoIter<T> { IntoIter { vec: self, pos: 0 } }
 }
 
+impl<'a, T> IntoIterator for &'a CVec<T> {
+	type IntoIter = std::slice::Iter<'a, T>;
+	type Item = &'a T;
+	fn into_iter(self) -> Self::IntoIter { (**self).iter() }
+}
+
+impl<'a, T> IntoIterator for &'a mut CVec<T> {
+	type IntoIter = std::slice::IterMut<'a, T>;
+	type Item = &'a mut T;
+	fn into_iter(self) -> Self::IntoIter { (**self).iter_mut() }
+}
+
 pub struct IntoIter<T> { vec: CVec<T>, pos: usize }
 
 impl<T> Drop for IntoIter<T> {
