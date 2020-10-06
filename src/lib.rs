@@ -11,6 +11,8 @@
 	hash_raw_entry,
 )]
 
+#![deny(unused_must_use)]
+
 pub mod cvec;
 pub mod sbox;
 pub mod entry_ext;
