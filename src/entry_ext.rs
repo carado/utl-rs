@@ -85,12 +85,20 @@ impl<I, E: EntryExtOr<I>> EntryOr<I, E> {
 	#[inline]
 	pub fn vacate(self) -> E::Value { self.vacate_entry().1 }
 
-	#[inline]
-	pub fn keep_if(self, whether: bool) -> Option<(E::Key, E::Value)> {
+	pub fn keep(self, whether: bool) {
 		match whether {
-			true => { self.occupy(); None },
-			false => Some(self.vacate_entry()),
+			true => self.occupy(),
+			false => drop(self.vacate_entry()),
 		}
+	}
+
+	pub fn keep_if(self, whether: impl FnOnce(&mut E::Value) -> bool) ->
+		impl std::ops::DerefMut<Target = Self>
+	{
+		super::OnDrop::new(self, |mut self_| {
+			let keep = whether(&mut *self_);
+			self_.keep(keep);
+		})
 	}
 }
 
