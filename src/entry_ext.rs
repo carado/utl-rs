@@ -84,6 +84,14 @@ impl<I, E: EntryExtOr<I>> EntryOr<I, E> {
 
 	#[inline]
 	pub fn vacate(self) -> E::Value { self.vacate_entry().1 }
+
+	#[inline]
+	pub fn keep_if(self, whether: bool) -> Option<(E::Key, E::Value)> {
+		match whether {
+			true => { self.occupy(); None },
+			false => Some(self.vacate_entry()),
+		}
+	}
 }
 
 macro_rules! impl_pair{

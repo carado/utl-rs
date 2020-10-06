@@ -30,6 +30,7 @@ pub mod thin;
 pub mod unreach;
 pub mod alloc_vec;
 pub mod dedup_vec;
+pub mod derefs;
 
 pub use crate::{
 	cvec::CVec,
@@ -45,5 +46,6 @@ pub use crate::{
 	range_ext::*,
 	thin::*,
 	unreach::*,
+	derefs::*,
 };
 
