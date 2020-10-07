@@ -9,6 +9,9 @@
 	slice_ptr_get,
 	untagged_unions,
 	hash_raw_entry,
+	maybe_uninit_extra,
+	maybe_uninit_ref,
+	bool_to_option,
 )]
 
 #![deny(unused_must_use)]
@@ -31,6 +34,7 @@ pub mod unreach;
 pub mod alloc_vec;
 pub mod dedup_vec;
 pub mod derefs;
+pub mod coffer;
 
 pub use crate::{
 	cvec::CVec,
