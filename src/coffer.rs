@@ -12,27 +12,27 @@ use {
 static mut AIDTIVE: MaybeUninit<parking_lot::Mutex<maps::std::Set<TypeId>>> =
 	MaybeUninit::uninit();
 
-pub struct IDoffer<T, ID: 'static> {
+pub struct Coffer<T, ID: 'static> {
 	value: UnsafeCell<T>,
 	_key: PhantomData<ID>,
 }
 
 pub struct Key<ID: 'static>(PhantomData<ID>);
 
-impl<T: Default, ID: 'static> Default for IDoffer<T, ID> {
+impl<T: Default, ID: 'static> Default for Coffer<T, ID> {
 	fn default() -> Self {
 		Self { value: T::default().into(), _key: PhantomData }
 	}
 }
 
-unsafe impl<T: Sync, ID: 'static> Sync for IDoffer<T, ID> {}
-unsafe impl<T: Send, ID: 'static> Send for IDoffer<T, ID> {}
+unsafe impl<T: Sync, ID: 'static> Sync for Coffer<T, ID> {}
+unsafe impl<T: Send, ID: 'static> Send for Coffer<T, ID> {}
 
-impl<T, ID: 'static> From<T> for IDoffer<T, ID> {
+impl<T, ID: 'static> From<T> for Coffer<T, ID> {
 	fn from(value: T) -> Self { Self { value: value.into(), _key: PhantomData } }
 }
 
-impl<T, ID: 'static> IDoffer<T, ID> {
+impl<T, ID: 'static> Coffer<T, ID> {
 	pub fn new(value: T) -> Self { Self::from(value) }
 
 	pub fn into_inner(self) -> T { self.value.into_inner() }
