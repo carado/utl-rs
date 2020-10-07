@@ -9,35 +9,35 @@ use {
 	crate::*,
 };
 
-static mut CLEFS: MaybeUninit<parking_lot::Mutex<maps::std::Set<TypeId>>> =
+static mut AIDTIVE: MaybeUninit<parking_lot::Mutex<maps::std::Set<TypeId>>> =
 	MaybeUninit::uninit();
 
-pub struct Coffer<T, C: 'static> {
+pub struct IDoffer<T, ID: 'static> {
 	value: UnsafeCell<T>,
-	_key: PhantomData<C>,
+	_key: PhantomData<ID>,
 }
 
-pub struct Clef<C: 'static>(PhantomData<C>);
+pub struct Key<ID: 'static>(PhantomData<ID>);
 
-impl<T: Default, C: 'static> Default for Coffer<T, C> {
+impl<T: Default, ID: 'static> Default for IDoffer<T, ID> {
 	fn default() -> Self {
 		Self { value: T::default().into(), _key: PhantomData }
 	}
 }
 
-unsafe impl<T: Sync, C: 'static> Sync for Coffer<T, C> {}
-unsafe impl<T: Send, C: 'static> Send for Coffer<T, C> {}
+unsafe impl<T: Sync, ID: 'static> Sync for IDoffer<T, ID> {}
+unsafe impl<T: Send, ID: 'static> Send for IDoffer<T, ID> {}
 
-impl<T, C: 'static> From<T> for Coffer<T, C> {
+impl<T, ID: 'static> From<T> for IDoffer<T, ID> {
 	fn from(value: T) -> Self { Self { value: value.into(), _key: PhantomData } }
 }
 
-impl<T, C: 'static> Coffer<T, C> {
+impl<T, ID: 'static> IDoffer<T, ID> {
 	pub fn new(value: T) -> Self { Self::from(value) }
 
 	pub fn into_inner(self) -> T { self.value.into_inner() }
 
-	pub fn get<'a>(&'a self, _: &'a mut Clef<C>) -> &'a mut T {
+	pub fn get<'a>(&'a self, _: &'a mut Key<ID>) -> &'a mut T {
 		unsafe { &mut *self.value.get() }
 	}
 
@@ -46,31 +46,31 @@ impl<T, C: 'static> Coffer<T, C> {
 	}
 }
 
-impl<C: 'static> Clef<C> {
+impl<ID: 'static> Key<ID> {
 	pub fn unique() -> Option<Self> {
 		unsafe {
 			static INIT: Once = Once::new();
 
 			INIT.call_once(|| {
-				CLEFS.write(<_>::default());
+				AIDTIVE.write(<_>::default());
 			});
 
-			CLEFS
+			AIDTIVE
 				.assume_init_mut()
 				.lock()
-				.insert(TypeId::of::<C>())
-				.then_some(Clef(PhantomData))
+				.insert(TypeId::of::<ID>())
+				.then_some(Key(PhantomData))
 		}
 	}
 }
 
-impl<C: 'static> Drop for Clef<C> {
+impl<ID: 'static> Drop for Key<ID> {
 	fn drop(&mut self) {
 		unsafe {
-			CLEFS
+			AIDTIVE
 				.assume_init_mut()
 				.lock()
-				.remove(&TypeId::of::<C>());
+				.remove(&TypeId::of::<ID>());
 		}
 	}
 }
