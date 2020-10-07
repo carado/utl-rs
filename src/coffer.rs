@@ -6,10 +6,11 @@ use {
 		mem::MaybeUninit,
 		sync::Once,
 	},
-	crate::maps,
+	crate::*,
 };
 
-static mut CLEFS: MaybeUninit<maps::std::Set<TypeId>> = MaybeUninit::uninit();
+static mut CLEFS: MaybeUninit<parking_lot::Mutex<maps::std::Set<TypeId>>> =
+	MaybeUninit::uninit();
 
 pub struct Coffer<T, C: 'static> {
 	value: UnsafeCell<T>,
@@ -56,6 +57,7 @@ impl<C: 'static> Clef<C> {
 
 			CLEFS
 				.assume_init_mut()
+				.lock()
 				.insert(TypeId::of::<C>())
 				.then_some(Clef(PhantomData))
 		}
@@ -67,6 +69,7 @@ impl<C: 'static> Drop for Clef<C> {
 		unsafe {
 			CLEFS
 				.assume_init_mut()
+				.lock()
 				.remove(&TypeId::of::<C>());
 		}
 	}
