@@ -35,6 +35,7 @@ pub mod alloc_vec;
 pub mod dedup_vec;
 pub mod derefs;
 pub mod coffer;
+pub mod by_ptr;
 
 pub use crate::{
 	cvec::CVec,
@@ -51,6 +52,7 @@ pub use crate::{
 	thin::*,
 	unreach::*,
 	derefs::*,
+	by_ptr::*,
 };
 
 pub use parking_lot;
