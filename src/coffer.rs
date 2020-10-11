@@ -47,7 +47,7 @@ impl<T, ID: 'static> Coffer<T, ID> {
 }
 
 impl<ID: 'static> Key<ID> {
-	pub fn unique() -> Option<Self> {
+	pub fn acquire() -> Option<Self> {
 		unsafe {
 			static INIT: Once = Once::new();
 
