@@ -37,10 +37,6 @@ impl<T, ID: 'static> Coffer<T, ID> {
 
 	pub fn into_inner(self) -> T { self.value.into_inner() }
 
-	pub fn get<'a>(&'a self, _: &'a mut Key<ID>) -> &'a mut T {
-		unsafe { &mut *self.value.get() }
-	}
-
 	pub fn get_mut(&mut self) -> &mut T {
 		unsafe { &mut *self.value.get() }
 	}
@@ -61,6 +57,10 @@ impl<ID: 'static> Key<ID> {
 				.insert(TypeId::of::<ID>())
 				.then_some(Key(PhantomData))
 		}
+	}
+
+	pub fn open<'a, T>(&'a mut self, coffer: &Coffer<T, ID>) -> &'a mut T {
+		unsafe { &mut *coffer.value.get() }
 	}
 }
 

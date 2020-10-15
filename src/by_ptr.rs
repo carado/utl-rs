@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, hash::{Hash, Hasher}, ops::{Deref, CoerceUnsized}};
+use std::{cmp::Ordering, hash::{Hash, Hasher}, ops::{Deref, DerefMut, CoerceUnsized}};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ByPtr<T: ?Sized>(pub T);
@@ -48,6 +48,10 @@ impl<T> From<T> for ByPtr<T> {
 impl<T: ?Sized> Deref for ByPtr<T> {
 	type Target = T;
 	fn deref(&self) -> &T { &self.0 }
+}
+
+impl<T: ?Sized> DerefMut for ByPtr<T> {
+	fn deref_mut(&mut self) -> &mut T { &mut self.0 }
 }
 
 impl<T, U> CoerceUnsized<ByPtr<U>> for ByPtr<T> where
