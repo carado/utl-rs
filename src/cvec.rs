@@ -196,7 +196,6 @@ impl<T> Extend<T> for CVec<T> {
 			for (item, pos) in iter.zip(self.len ..) {
 				if pos == alloc_cap {
 					let new_alloc_cap = (alloc_cap * 2).max(1);
-					dbg!(pos, alloc_cap, new_alloc_cap);
 					self.resize_cap(alloc_cap, new_alloc_cap, Alloc::grow);
 					alloc_cap = new_alloc_cap;
 				}
@@ -207,7 +206,6 @@ impl<T> Extend<T> for CVec<T> {
 
 			let should_cap = Self::len_cap(self.len);
 			if should_cap != alloc_cap {
-				dbg!(alloc_cap, should_cap);
 				debug_assert!(should_cap < alloc_cap);
 				self.resize_cap(alloc_cap, should_cap, Alloc::shrink);
 			}
