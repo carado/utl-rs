@@ -1,6 +1,6 @@
 use std::{
 	ptr::{self, NonNull},
-	iter::{IntoIterator, Iterator, TrustedLen},
+	iter::{IntoIterator, Iterator, TrustedLen, ExactSizeIterator},
 	mem::{size_of, forget, replace},
 	slice,
 	ops,
@@ -182,6 +182,15 @@ impl<T> CVec<T> {
 	pub fn as_ptr(&self) -> *mut T { self.data.as_ptr() }
 
 	pub fn reserve(&self, _: usize) {} // intentionally a no-op
+
+	// for now just RangeFull (`..`)
+	pub fn drain(&mut self, _: std::ops::RangeFull) -> IntoIter<T> {
+		std::mem::replace(self, Self::new()).into_iter()
+	}
+
+	pub fn clear(&mut self) {
+		*self = Self::new();
+	}
 }
 
 impl<T> Extend<T> for CVec<T> {
@@ -247,8 +256,8 @@ impl<T> Iterator for IntoIter<T> {
 	type Item = T;
 
 	fn size_hint(&self) -> (usize, Option<usize>) {
-		let rem = self.vec.len - self.pos;
-		(rem, Some(rem))
+		let len = self.len();
+		(len, Some(len))
 	}
 
 	fn next(&mut self) -> Option<T> {
@@ -260,6 +269,11 @@ impl<T> Iterator for IntoIter<T> {
 			Some(elem)
 		}
 	}
+}
+
+impl<T> ExactSizeIterator for IntoIter<T> {
+	fn len(&self) -> usize { self.vec.len - self.pos }
+	fn is_empty(&self) -> bool { self.vec.len == self.pos }
 }
 
 unsafe impl<T> TrustedLen for IntoIter<T> {}

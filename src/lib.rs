@@ -12,6 +12,7 @@
 	maybe_uninit_extra,
 	maybe_uninit_ref,
 	bool_to_option,
+	exact_size_is_empty,
 )]
 
 #![deny(unused_must_use)]
