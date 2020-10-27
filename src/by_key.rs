@@ -5,10 +5,14 @@ use std::{
 	borrow::{Borrow, BorrowMut},
 };
 
-#[derive(Default, Clone, Copy, Debug, derive_more::Constructor)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct ByKey<K, V> {
 	pub key: K,
 	pub value: V,
+}
+
+impl<K, V> ByKey<K, V> {
+	pub fn new(key: K, value: V) -> Self { Self { key, value } }
 }
 
 impl<K: PartialEq, V> PartialEq for ByKey<K, V> {

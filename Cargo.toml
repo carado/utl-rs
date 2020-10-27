@@ -6,9 +6,9 @@ edition = "2018"
 
 [dependencies]
 num-traits = "0.2.12"
-derive_more = "0.99"
-rustc-hash = "1.1"
-fnv = "1.0"
-half = "1.6"
-parking_lot = "0.11"
+derive_more = "0.99.11"
+rustc-hash = "1.1.0"
+fnv = "1.0.7"
+half = "1.6.0"
+parking_lot = "0.11.0"
 

@@ -38,6 +38,7 @@ pub mod derefs;
 pub mod coffer;
 pub mod by_ptr;
 pub mod non_max;
+pub mod extend_ext;
 
 pub use crate::{
 	cvec::CVec,
@@ -56,6 +57,7 @@ pub use crate::{
 	derefs::*,
 	by_ptr::*,
 	non_max::*,
+	extend_ext::*,
 };
 
 pub use parking_lot;

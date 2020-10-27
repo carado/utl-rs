@@ -1,7 +1,9 @@
 #[cfg(debug_assertions)]
+#[macro_export]
 macro_rules! unsafe_unreachable{ () => { unreachable!() }; }
 
 #[cfg(not(debug_assertions))]
+#[macro_export]
 macro_rules! unsafe_unreachable{ () => { std::hint::unreachable_unchecked() }; }
 
 pub trait UnsafeUnwrap {

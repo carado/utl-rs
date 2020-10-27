@@ -1,10 +1,13 @@
-use std::{
-	ptr::{self, NonNull},
-	iter::{IntoIterator, Iterator, TrustedLen, ExactSizeIterator},
-	mem::{size_of, forget, replace},
-	slice,
-	ops,
-	alloc::{AllocError, Layout, Global as Alloc, AllocRef},
+use {
+	std::{
+		ptr::{self, NonNull},
+		iter::{IntoIterator, Iterator, TrustedLen, ExactSizeIterator},
+		mem::{size_of, forget, replace},
+		slice,
+		ops,
+		alloc::{AllocError, Layout, Global as Alloc, AllocRef},
+	},
+	crate::extend_ext::ExtendExt,
 };
 
 #[repr(C)]
@@ -26,7 +29,7 @@ impl<T> CVec<T> {
 
 	pub fn from_copy(iter: &[T]) -> Self where T: Copy {
 		let mut v = Self::new();
-		v.extend_copy(iter);
+		v.extend_copy_slice(iter);
 		v
 	}
 
@@ -87,33 +90,6 @@ impl<T> CVec<T> {
 		}
 
 		self.len = new_len;
-	}
-
-	pub fn extend_trusted_len(&mut self, elems: impl TrustedLen<Item = T>) {
-		unsafe {
-			let pos = self.len;
-
-			self.grow_len(self.len + elems.size_hint().1.unwrap());
-
-			for (elem, i) in elems.zip(pos ..) {
-				debug_assert!(i < self.len);
-				ptr::write(self.data.as_ptr().add(i), elem);
-			}
-		}
-	}
-
-	pub fn extend_copy(&mut self, data: &[T]) where T: Copy {
-		unsafe {
-			let pos = self.len;
-
-			self.grow_len(self.len + data.len());
-
-			ptr::copy_nonoverlapping(
-				data.as_ptr(),
-				self.data.as_ptr().add(pos),
-				data.len(),
-			);
-		}
 	}
 
 	#[inline]
@@ -224,6 +200,35 @@ impl<T> Extend<T> for CVec<T> {
 	fn extend_one(&mut self, val: T) { self.push(val); }
 }
 
+impl<T> ExtendExt<T> for CVec<T> {
+	fn extend_trusted_len(&mut self, elems: impl TrustedLen<Item = T>) {
+		unsafe {
+			let pos = self.len;
+
+			self.grow_len(self.len + elems.size_hint().1.unwrap());
+
+			for (elem, i) in elems.zip(pos ..) {
+				debug_assert!(i < self.len);
+				ptr::write(self.data.as_ptr().add(i), elem);
+			}
+		}
+	}
+
+	fn extend_copy_slice(&mut self, data: &[T]) where T: Copy {
+		unsafe {
+			let pos = self.len;
+
+			self.grow_len(self.len + data.len());
+
+			ptr::copy_nonoverlapping(
+				data.as_ptr(),
+				self.data.as_ptr().add(pos),
+				data.len(),
+			);
+		}
+	}
+}
+
 impl<T> IntoIterator for CVec<T> {
 	type IntoIter = IntoIter<T>;
 	type Item = T;
@@ -261,7 +266,7 @@ impl<T> Iterator for IntoIter<T> {
 	}
 
 	fn next(&mut self) -> Option<T> {
-		if self.pos == self.vec.len {
+		if self.is_empty() {
 			None
 		} else {
 			let elem = unsafe { ptr::read(self.vec.as_ptr().add(self.pos)) };
