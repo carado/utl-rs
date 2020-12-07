@@ -4,7 +4,7 @@ use std::{
 	mem::{size_of, transmute_copy, forget},
 	ptr::{self, NonNull},
 	raw::TraitObject,
-	alloc::{AllocRef, Global as Alloc, Layout},
+	alloc::{Allocator, Global as Alloc, Layout},
 	ops::{Deref, DerefMut},
 	any::Any,
 };
@@ -21,7 +21,7 @@ impl<T: ?Sized, Al> Thin<T, Al> {
 
 			assert_eq!(offset, size_of::<Al>());
 
-			let mem = Alloc.alloc(layout).unwrap().as_mut_ptr();
+			let mem = Alloc.allocate(layout).unwrap().as_mut_ptr();
 
 			ptr::write(
 				mem as _,
@@ -77,7 +77,7 @@ impl<T: ?Sized, Al> Thin<T, Al> {
 	unsafe fn deallocer(next: Layout) -> impl FnOnce(*const u8) {
 		let (layout, offset) = Layout::new::<*mut ()>().extend(next).unwrap();
 		assert_eq!(offset, size_of::<Al>());
-		move |ptr| Alloc.dealloc(NonNull::new_unchecked(ptr as _), layout)
+		move |ptr| Alloc.deallocate(NonNull::new_unchecked(ptr as _), layout)
 	}
 
 	pub unsafe fn deref_from_u8_ptr(ptr: *const u8) -> *const T {

@@ -5,10 +5,10 @@ authors = ["carado <carado@carado.moe>"]
 edition = "2018"
 
 [dependencies]
-num-traits = "0.2.12"
+num-traits = "0.2.14"
 derive_more = "0.99.11"
 rustc-hash = "1.1.0"
 fnv = "1.0.7"
 half = "1.6.0"
-parking_lot = "0.11.0"
+parking_lot = "0.11.1"
 

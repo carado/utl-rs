@@ -5,7 +5,7 @@ use {
 		mem::{size_of, forget, replace},
 		slice,
 		ops,
-		alloc::{AllocError, Layout, Global as Alloc, AllocRef},
+		alloc::{AllocError, Layout, Global as Alloc, Allocator},
 	},
 	crate::extend_ext::ExtendExt,
 };
@@ -18,7 +18,7 @@ pub struct CVec<T> {
 
 impl<T> CVec<T> {
 	pub fn new() -> Self {
-		Self { len: 0, data: Alloc.alloc(Self::layout(0)).unwrap().cast() }
+		Self { len: 0, data: Alloc.allocate(Self::layout(0)).unwrap().cast() }
 	}
 
 	pub fn from_trusted_len(iter: impl TrustedLen<Item = T>) -> Self {
@@ -62,7 +62,7 @@ impl<T> CVec<T> {
 	}
 
 	unsafe fn dealloc(&self) {
-		Alloc.dealloc(self.data.cast(), Self::layout(self.cap()));
+		Alloc.deallocate(self.data.cast(), Self::layout(self.cap()));
 	}
 
 	unsafe fn resize_cap(
