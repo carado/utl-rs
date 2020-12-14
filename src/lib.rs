@@ -39,6 +39,7 @@ pub mod coffer;
 pub mod by_ptr;
 pub mod non_max;
 pub mod extend_ext;
+pub mod unsafe_cell;
 
 pub use crate::{
 	cvec::CVec,
@@ -58,6 +59,7 @@ pub use crate::{
 	by_ptr::*,
 	non_max::*,
 	extend_ext::*,
+	unsafe_cell::{UnsafeCell, UnsafeCellRef, UnsafeCellMut},
 };
 
 pub use parking_lot;

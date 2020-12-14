@@ -22,5 +22,6 @@ Various (not very tested and entirely undocumented) utilities for Rust.
 * `sbox` works like a `Box` to a DST except that it may remove the extra layer of indirection when the content is small (and aligned) enough; relies on `Box<dyn Trait>: Trait` to avoid branching
 * `thin` works like a `Box` except it is only one `usize` long (contrary to fat pointers when DSTs are used)
 * `atomic` re-exports parts of `std::sync::atomic` under more useful names
+* `unsafe_cell` works like `std::cell::UnsafeCell` except in debug, where it is a `RwLock`
 * `utl` re-exports all useful traits, types, and modules
 
