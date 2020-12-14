@@ -29,6 +29,9 @@ pub mod debug {
 	#[derive(Default, Debug)]
 	pub struct UnsafeCell<T: ?Sized>(parking_lot::RwLock<T>);
 
+	unsafe impl<T: Sync> Sync for UnsafeCell<T> {}
+	unsafe impl<T: Send> Send for UnsafeCell<T> {}
+
 	pub struct UnsafeCellRef<'a, T: ?Sized>(parking_lot::RwLockReadGuard<'a, T>);
 
 	pub struct UnsafeCellMut<'a, T: ?Sized>(parking_lot::RwLockWriteGuard<'a, T>);
