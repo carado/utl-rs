@@ -13,6 +13,7 @@
 	maybe_uninit_ref,
 	bool_to_option,
 	exact_size_is_empty,
+	generator_trait,
 )]
 
 #![deny(unused_must_use)]
@@ -40,6 +41,7 @@ pub mod by_ptr;
 pub mod non_max;
 pub mod extend_ext;
 pub mod unsafe_cell;
+pub mod generator_state_ext;
 
 pub use crate::{
 	cvec::CVec,
@@ -60,6 +62,7 @@ pub use crate::{
 	non_max::*,
 	extend_ext::*,
 	unsafe_cell::{UnsafeCell, UnsafeCellRef, UnsafeCellMut},
+	generator_state_ext::*,
 };
 
 pub use parking_lot;
