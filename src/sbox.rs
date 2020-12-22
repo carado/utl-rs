@@ -1,9 +1,9 @@
-use std::{*, raw::TraitObject, mem::ManuallyDrop};
+use std::{*, raw::TraitObject, mem::{ManuallyDrop, MaybeUninit}};
 
 #[repr(C)]
 pub struct SBox<T: ?Sized, S = [usize; 1]> {
 	vtable: num::NonZeroUsize,
-	data: S,
+	data: MaybeUninit<S>,
 	_phantom: marker::PhantomData<T>,
 }
 
@@ -45,13 +45,13 @@ impl<T: ?Sized, S> SBox<T, S> {
 
 		unsafe {
 			let vtable = mem::transmute_copy::<&T, TraitObject>(&(&val as &T)).vtable;
-			let mut data = mem::MaybeUninit::<S>::zeroed(); //TODO try out uninit()
+			let mut data = MaybeUninit::<S>::zeroed(); //TODO try out uninit()
 			ptr::copy::<U>(&val as *const _, data.as_mut_ptr() as *mut _, 1);
 			mem::forget(val);
 
 			Self {
 				vtable: num::NonZeroUsize::new(vtable as _).expect("zero vtable"),
-				data: data.assume_init(),
+				data: std::mem::transmute_copy(&data),
 				_phantom: marker::PhantomData,
 			}
 		}
@@ -104,13 +104,16 @@ impl<T: ?Sized, U, S> SBoxOr<T, U, S> {
 }
 
 impl<T: ?Sized, S: 'static + Copy> SBox<T, S> {
-	pub unsafe fn into_raw(self) -> (num::NonZeroUsize, S) {
+	pub unsafe fn into_raw(self) -> (num::NonZeroUsize, MaybeUninit<S>) {
 		let pair = (self.vtable, self.data);
 		mem::forget(self);
 		pair
 	}
 
-	pub unsafe fn from_raw(vtable: num::NonZeroUsize, data: S) -> Self {
+	pub unsafe fn from_raw(
+		vtable: num::NonZeroUsize,
+		data: MaybeUninit<S>,
+	) -> Self {
 		Self { vtable, data, _phantom: marker::PhantomData }
 	}
 }

@@ -1,10 +1,20 @@
 #[cfg(debug_assertions)]
+#[deprecated(note = "use unsafe_unreachable (function rather than macro)")]
 #[macro_export]
 macro_rules! unsafe_unreachable{ () => { unreachable!() }; }
 
 #[cfg(not(debug_assertions))]
+#[deprecated(note = "use unsafe_unreachable (function rather than macro)")]
 #[macro_export]
 macro_rules! unsafe_unreachable{ () => { std::hint::unreachable_unchecked() }; }
+
+#[cfg(debug_assertions)]
+#[inline(always)]
+pub unsafe fn unsafe_unreachable() -> ! { unreachable!() }
+
+#[cfg(not(debug_assertions))]
+#[inline(always)]
+pub unsafe fn unsafe_unreachable() -> ! { std::hint::unreachable_unchecked() }
 
 pub trait UnsafeUnwrap {
 	type Value;
@@ -23,7 +33,7 @@ impl<T> UnsafeUnwrap for Option<T> {
 	unsafe fn unsafe_unwrap(self) -> T {
 		match self {
 			Some(val) => val,
-			None => unsafe_unreachable!(),
+			None => unsafe_unreachable(),
 		}
 	}
 
@@ -31,7 +41,7 @@ impl<T> UnsafeUnwrap for Option<T> {
 	unsafe fn unsafe_unwrap_ref(&self) -> &T {
 		match self {
 			Some(val) => val,
-			None => unsafe_unreachable!(),
+			None => unsafe_unreachable(),
 		}
 	}
 
@@ -39,14 +49,14 @@ impl<T> UnsafeUnwrap for Option<T> {
 	unsafe fn unsafe_unwrap_mut(&mut self) -> &mut T {
 		match self {
 			Some(val) => val,
-			None => unsafe_unreachable!(),
+			None => unsafe_unreachable(),
 		}
 	}
 
 	#[inline]
 	unsafe fn unsafe_unwrap_alt(self) {
 		match self {
-			Some(_) => unsafe_unreachable!(),
+			Some(_) => unsafe_unreachable(),
 			None => {},
 		}
 	}
@@ -60,7 +70,7 @@ impl<T, E> UnsafeUnwrap for Result<T, E> {
 	unsafe fn unsafe_unwrap(self) -> T {
 		match self {
 			Ok(val) => val,
-			Err(_) => unsafe_unreachable!(),
+			Err(_) => unsafe_unreachable(),
 		}
 	}
 
@@ -68,7 +78,7 @@ impl<T, E> UnsafeUnwrap for Result<T, E> {
 	unsafe fn unsafe_unwrap_ref(&self) -> &T {
 		match self {
 			Ok(val) => val,
-			Err(_) => unsafe_unreachable!(),
+			Err(_) => unsafe_unreachable(),
 		}
 	}
 
@@ -76,14 +86,14 @@ impl<T, E> UnsafeUnwrap for Result<T, E> {
 	unsafe fn unsafe_unwrap_mut(&mut self) -> &mut T {
 		match self {
 			Ok(val) => val,
-			Err(_) => unsafe_unreachable!(),
+			Err(_) => unsafe_unreachable(),
 		}
 	}
 
 	#[inline]
 	unsafe fn unsafe_unwrap_alt(self) -> E {
 		match self {
-			Ok(_) => unsafe_unreachable!(),
+			Ok(_) => unsafe_unreachable(),
 			Err(e) => e,
 		}
 	}
