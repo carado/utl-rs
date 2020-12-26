@@ -26,7 +26,6 @@ macro_rules! base_impl {
 }
 
 pub mod debug {
-	#[derive(Default, Debug)]
 	pub struct UnsafeCell<T: ?Sized>(parking_lot::RwLock<T>);
 
 	pub struct UnsafeCellRef<'a, T: ?Sized>(parking_lot::RwLockReadGuard<'a, T>);
