@@ -32,6 +32,22 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 	}
 }
 
+fn unsign<T, U>(v: T) -> U where
+	T: std::ops::Neg<Output = T>
+		+ num_traits::AsPrimitive<U>
+		+ std::cmp::Ord
+		+ num_traits::Zero
+	,
+	U: std::ops::Shl<u32, Output = U>
+		+ std::ops::Add<Output = U>
+		+ num_traits::One
+		+ Copy
+		+ 'static
+	,
+{
+	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
+}
+
 impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
