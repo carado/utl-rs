@@ -22,28 +22,49 @@ pub type Result<T = ()> = std::result::Result<T, Infallible>;
 pub struct BytesSer<T>(pub T);
 
 impl<T: ExtendExt<u8>> BytesSer<T> {
+	fn ecs(&mut self, s: &[u8]) { self.0.extend_copy_slice(s); }
+	fn e1(&mut self, b: u8) { self.0.extend_one(b); }
+
 	fn ser_u16(&mut self, v: u16) {
 		match v.leading_zeros() {
-			0 => self.0.extend_copy_slice(&[0x80, (v >> 8) as u8, v as u8]),
-			1..=7 => self.0.extend_copy_slice(&[0x80 | (v >> 8) as u8, v as u8]),
-			8 => self.0.extend_copy_slice(&[0x80, v as u8 & 0x7F]),
-			9.. => self.0.extend_one(v as u8),
+			0     => self.ecs(&[0x80, (v >> 8) as u8, v as u8]),
+			1..=7 => self.ecs(&[0x80 | (v >> 8) as u8, v as u8]),
+			8     => self.ecs(&[0x80, v as u8 & 0x7F]),
+			9..   => self.e1(v as u8),
+		}
+	}
+
+	fn ser_u32(&mut self, v: u32) {
+		let [a, b, c, d] = v.to_be_bytes();
+		match v.leading_zeros() {
+			 0      => self.ecs(&[0xC0,        a, b, c, d]),
+			 1      => self.ecs(&[0x40, 0x80 | a, b, c, d]),
+			 2..= 7 => self.ecs(&[0xC0 | a, b, c]),
+			 8      => self.ecs(&[0xC0, 0x7F & a, b, c]),
+			 9      => self.ecs(&[0x40, 0xC0 ^ a, b, c]),
+			10..=15 => self.ecs(&[0x80 | a, b]),
+			16      => self.ecs(&[0x80, a, b]),
+			17      => self.ecs(&[0x40, a, b]),
+			18..=23 => self.ecs(&[0x40, a, b]),
+			24      => self.ecs(&[0x80, 0x7F & a]),
+			25      => self.ecs(&[0x40, 0x3F & a]),
+			26..    => self.e1(a),
 		}
 	}
 }
 
+#[test]
+fn test() {
+	for i in u16::min_value()..=u16::max_value() {
+		//assert_eq!(
+	}
+}
+
 fn unsign<T, U>(v: T) -> U where
-	T: std::ops::Neg<Output = T>
-		+ num_traits::AsPrimitive<U>
-		+ std::cmp::Ord
-		+ num_traits::Zero
-	,
-	U: std::ops::Shl<u32, Output = U>
-		+ std::ops::Add<Output = U>
-		+ num_traits::One
-		+ Copy
-		+ 'static
-	,
+	T: std::ops::Neg<Output = T> + num_traits::AsPrimitive<U>
+		+ std::cmp::Ord + num_traits::Zero,
+	U: std::ops::Shl<u32, Output = U> + std::ops::Add<Output = U>
+		+ num_traits::One + Copy + 'static,
 {
 	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
 }
@@ -65,19 +86,12 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	fn serialize_u8(self, v: u8) -> Result { Ok(self.0.extend_one(v     )) }
 	fn serialize_i8(self, v: i8) -> Result { Ok(self.0.extend_one(v as _)) }
 
-	fn serialize_u16(self, v: u16) -> Result {
-		self.ser_u16(v);
-		Ok(())
-	}
+	fn serialize_u16(self, v: u16) -> Result { self.ser_u16(v); Ok(()) }
+	fn serialize_i16(self, v: i16) -> Result { self.ser_u16(unsign(v)); Ok(()) }
 
-	fn serialize_i16(self, mut v: i16) -> Result {
-		self
-			.ser_u16(if v < 0 { (((-v) as u16) << 1) + 1 } else { (v as u16) << 1 });
-		Ok(())
-	}
+	fn serialize_u32(self, v: u32) -> Result { self.ser_u32(v); Ok(()) }
+	fn serialize_i32(self, v: i32) -> Result { self.ser_u32(unsign(v)); Ok(()) }
 
-	fn serialize_u32(self, v: u32) -> Result { todo!() }
-	fn serialize_i32(self, v: i32) -> Result { todo!() }
 	fn serialize_u64(self, v: u64) -> Result { todo!() }
 	fn serialize_i64(self, v: i64) -> Result { todo!() }
 	//fn serialize_u128(self, v: u128) -> Result { todo!() }
