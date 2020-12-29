@@ -54,7 +54,12 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 		Ok(())
 	}
 
-	fn serialize_i16(self, v: i16) -> Result { todo!() }
+	fn serialize_i16(self, mut v: i16) -> Result {
+		self
+			.ser_u16(if v < 0 { (((-v) as u16) << 1) + 1 } else { (v as u16) << 1 });
+		Ok(())
+	}
+
 	fn serialize_u32(self, v: u32) -> Result { todo!() }
 	fn serialize_i32(self, v: i32) -> Result { todo!() }
 	fn serialize_u64(self, v: u64) -> Result { todo!() }
