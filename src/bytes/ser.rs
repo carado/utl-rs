@@ -35,21 +35,35 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 	}
 
 	fn ser_u32(&mut self, v: u32) {
-		let [a, b, c, d] = v.to_be_bytes();
-		match v.leading_zeros() {
-			 0      => self.ecs(&[0xC0,        a, b, c, d]),
-			 1      => self.ecs(&[0x40, 0x80 | a, b, c, d]),
-			 2..= 7 => self.ecs(&[0xC0 | a, b, c]),
-			 8      => self.ecs(&[0xC0, 0x7F & a, b, c]),
-			 9      => self.ecs(&[0x40, 0xC0 ^ a, b, c]),
-			10..=15 => self.ecs(&[0x80 | a, b]),
-			16      => self.ecs(&[0x80, a, b]),
-			17      => self.ecs(&[0x40, a, b]),
-			18..=23 => self.ecs(&[0x40, a, b]),
-			24      => self.ecs(&[0x80, 0x7F & a]),
-			25      => self.ecs(&[0x40, 0x3F & a]),
-			26..    => self.e1(a),
+		let zeros = v.leading_zeros();
+		let bytes_m1 = ((32 + 9 - zeros) / 8).saturating_sub(1) as usize; // 0..=3
+		let masked = zeros & 0b111;
+
+		let mut xor = bytes_m1 << 6;
+
+		if masked <= 1 {
+			let shift = 1 + (masked ^ 1);
+			self.e1((xor >> shift) as u8 & 0b11_000000);
+			xor = (xor ^ 0b1_000000) << masked;
 		}
+
+		self.ecs(
+			&(v ^ ((xor as u32) << (bytes_m1 * 8))).to_be_bytes()[3 - bytes_m1..]
+		);
+	}
+
+	fn ser_u64(&mut self, v: u64) {
+		/*
+		let [a, b, c, d, e, f, g, h] = v.to_be_bytes();
+		match v.leading_zeros() {
+			 0      => self.ecs(&[0xE0, a, b, c, d, e, f, g, h]),
+			 1      => self.ecs(&[0x60, 0x80 | a, b, c, d, e, f, g, h]),
+			 2      => self.ecs(&[0x20, 0xC0 | a, b, c, d, e, f, g, h]),
+			 3..= 7 => self.ecs(&[0xE0 | a, b, c, d, e, f, g]),
+			 8      => self.ecs(&[0x60, 0xC0 ^ a, b, c, d, e, f, g]),
+			 9      => self.ecs(&[0x20, 0x
+		}
+		*/
 	}
 }
 
