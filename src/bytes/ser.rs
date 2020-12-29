@@ -1,5 +1,6 @@
 use std::io::Write;
-use super::extend_ext::ExtendExt;
+use crate::extend_ext::ExtendExt;
+use serde::Serialize;
 
 #[derive(Debug)]
 pub struct Infallible(!);
@@ -16,9 +17,20 @@ impl std::fmt::Display for Infallible {
 	}
 }
 
+pub type Result<T = ()> = std::result::Result<T, Infallible>;
+
 pub struct BytesSer<T>(pub T);
 
-pub type Result<T = ()> = std::result::Result<T, Infallible>;
+impl<T: ExtendExt<u8>> BytesSer<T> {
+	fn ser_u16(&mut self, v: u16) {
+		match v.leading_zeros() {
+			0 => self.0.extend_copy_slice(&[0x80, (v >> 8) as u8, v as u8]),
+			1..=7 => self.0.extend_copy_slice(&[0x80 | (v >> 8) as u8, v as u8]),
+			8 => self.0.extend_copy_slice(&[0x80, v as u8 & 0x7F]),
+			9.. => self.0.extend_one(v as u8),
+		}
+	}
+}
 
 impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	type Ok = ();
@@ -38,12 +50,7 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	fn serialize_i8(self, v: i8) -> Result { Ok(self.0.extend_one(v as _)) }
 
 	fn serialize_u16(self, v: u16) -> Result {
-		match v.leading_zeros() {
-			0 => self.0.extend_copy_slice(&[0x80, (v >> 8) as u8, v as u8]),
-			1..=7 => self.0.extend_copy_slice(&[0x80 | (v >> 8) as u8, v as u8]),
-			8 => self.0.extend_copy_slice(&[0x80, v as u8 & 0x7F]),
-			9.. => self.0.extend_one(v as u8),
-		}
+		self.ser_u16(v);
 		Ok(())
 	}
 
@@ -62,7 +69,7 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	fn serialize_str(self, v: &str) -> Result { todo!() }
 	fn serialize_bytes(self, v: &[u8]) -> Result { todo!() }
 	fn serialize_none(self) -> Result { todo!() }
-	fn serialize_some<U: ?Sized + serde::Serialize>(self, v: &U) -> Result { todo!() }
+	fn serialize_some<U: ?Sized + Serialize>(self, v: &U) -> Result { todo!() }
 	fn serialize_unit(self) -> Result { todo!() }
 	fn serialize_unit_struct(self, _name: &'static str) -> Result { todo!() }
 
@@ -73,13 +80,13 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 		todo!()
 	}
 
-	fn serialize_newtype_struct<U: ?Sized + serde::Serialize>(
+	fn serialize_newtype_struct<U: ?Sized + Serialize>(
 		self, _name: &'static str, value: &U,
 	) -> Result {
 		todo!()
 	}
 
-	fn serialize_newtype_variant<U: ?Sized + serde::Serialize>(
+	fn serialize_newtype_variant<U: ?Sized + Serialize>(
 		self,
 		_name: &'static str,
 		_variant_index: u32,
@@ -128,4 +135,94 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 		todo!()
 	}
 }
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeSeq for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_element<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_element<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_field<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_field<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeMap for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_key<U: ?Sized + Serialize>(&mut self, key: &U) -> Result {
+		todo!()
+	}
+
+	fn serialize_value<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_field<U: ?Sized + Serialize>(
+		&mut self, key: &'static str, value: &U,
+	) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+impl<T: ExtendExt<u8>> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
+	type Ok = ();
+	type Error = Infallible;
+
+	fn serialize_field<U: ?Sized + Serialize>(
+		&mut self, key: &'static str, value: &U,
+	) -> Result {
+		todo!()
+	}
+
+	fn end(self) -> Result { todo!() }
+}
+
+
+
+
 
