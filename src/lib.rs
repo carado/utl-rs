@@ -14,6 +14,9 @@
 	bool_to_option,
 	exact_size_is_empty,
 	generator_trait,
+	never_type,
+	half_open_range_patterns,
+	exclusive_range_pattern,
 )]
 
 #![deny(unused_must_use)]
@@ -42,6 +45,7 @@ pub mod non_max;
 pub mod extend_ext;
 pub mod unsafe_cell;
 pub mod generator_state_ext;
+#[cfg(feature = "serde")] pub mod bytes;
 
 pub use crate::{
 	cvec::CVec,
