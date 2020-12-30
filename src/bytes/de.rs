@@ -257,6 +257,18 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 		v.visit_i128(resign(self.de_u128()?))
 	}
 
+	fn deserialize_f32<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let mut bytes = [0u8; 4];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_f32(f32::from_bits(u32::from_le_bytes(bytes)))
+	}
+
+	fn deserialize_f64<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let mut bytes = [0u8; 8];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_f64(f64::from_bits(u64::from_le_bytes(bytes)))
+	}
+
 	fn deserialize_char<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		v.visit_char(match self.byte()? {
 			n@0..=0x7F => n as u8 as char,
