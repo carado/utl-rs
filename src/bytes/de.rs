@@ -15,7 +15,7 @@ pub enum Error {
 	InvalidBool(u8),
 	InvalidEnumDiscriminant(u32),
 	MalformedUtf8([u8; 6]),
-	Low(std::io::Error),
+	Io(std::io::Error),
 	Custom(String),
 	SizeExceeded(usize),
 }
@@ -27,7 +27,7 @@ impl Display for Error {
 				write!(f, "byte 0x{:02X} doesn't represent a bool", n),
 			Self::InvalidEnumDiscriminant(n) =>
 				write!(f, "invalid enum discriminant {}", n),
-			Self::Low   (e) => write!(f, "{}", e),
+			Self::Io    (e) => write!(f, "{}", e),
 			Self::Custom(e) => write!(f, "{}", e),
 			Self::SizeExceeded(n) => write!(f, "size header {} exceeds max", n),
 		}
@@ -52,7 +52,7 @@ fn eof<T>() -> Result<T> {
 
 	impl std::error::Error for Eof {}
 
-	Err(Error::Low(
+	Err(Error::Io(
 		std::io::Error::new(std::io::ErrorKind::UnexpectedEof, Box::new(Eof))
 	))
 }
