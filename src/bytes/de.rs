@@ -122,10 +122,14 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		Ok(n as usize)
 	}
 
-	fn de_usize_buf(&mut self) -> Result<Vec<u8>> {
+	fn de_usize_alloc(&mut self) -> Result<usize> {
 		let len = self.de_usize()?;
 		self.consume_alloc(len)?;
-		let mut buf = vec![0u8; len];
+		Ok(len)
+	}
+
+	fn de_usize_buf(&mut self) -> Result<Vec<u8>> {
+		let mut buf = vec![0u8; self.de_usize_alloc()?];
 		self.read.read_exact(&mut buf).map_err(Error::Io)?;
 		Ok(buf)
 	}
@@ -345,7 +349,7 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	}
 
 	fn deserialize_seq<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let len = self.de_usize()?;
+		let len = self.de_usize_alloc()?;
 		v.visit_seq(BytesDeLen { len, de: self })
 	}
 
@@ -362,7 +366,7 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	}
 
 	fn deserialize_map<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let len = self.de_usize()?;
+		let len = self.de_usize_alloc()?;
 		v.visit_seq(BytesDeLen { len, de: self })
 	}
 
