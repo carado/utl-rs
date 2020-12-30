@@ -197,27 +197,52 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	fn serialize_u32(self, v: u32) -> Result { self.ser_u32(v); Ok(()) }
 	fn serialize_i32(self, v: i32) -> Result { self.ser_u32(unsign(v)); Ok(()) }
 
-	fn serialize_u64(self, v: u64) -> Result { todo!() }
-	fn serialize_i64(self, v: i64) -> Result { todo!() }
-	//fn serialize_u128(self, v: u128) -> Result { todo!() }
-	//fn serialize_i128(self, v: i128) -> Result { todo!() }
+	fn serialize_u64(self, v: u64) -> Result { self.ser_u64(v); Ok(()) }
+	fn serialize_i64(self, v: i64) -> Result { self.ser_u64(unsign(v)); Ok(()) }
 
-	fn serialize_f32(self, v: f32) -> Result { todo!() }
-	fn serialize_f64(self, v: f64) -> Result { todo!() }
+	fn serialize_u128(self, v: u128) -> Result { self.ser_u128(v); Ok(()) }
+	fn serialize_i128(self, v: i128) -> Result { self.ser_u128(unsign(v)); Ok(()) }
+
+	fn serialize_f32(self, v: f32) -> Result {
+		self.ecs(&v.to_bits().to_le_bytes());
+		Ok(())
+	}
+
+	fn serialize_f64(self, v: f64) -> Result {
+		self.ecs(&v.to_bits().to_le_bytes());
+		Ok(())
+	}
 	
-	fn serialize_char(self, v: char) -> Result { todo!() }
-	fn serialize_str(self, v: &str) -> Result { todo!() }
-	fn serialize_bytes(self, v: &[u8]) -> Result { todo!() }
-	fn serialize_none(self) -> Result { todo!() }
-	fn serialize_some<U: ?Sized + Serialize>(self, v: &U) -> Result { todo!() }
-	fn serialize_unit(self) -> Result { todo!() }
-	fn serialize_unit_struct(self, _name: &'static str) -> Result { todo!() }
+	fn serialize_char(self, v: char) -> Result { self.ser_u32(v as _); Ok(()) }
+	fn serialize_str(self, v: &str) -> Result {
+		self.ser_u64(v.chars().count() as u64);
+		for char in v.chars() { self.serialize_char(char)?; }
+		Ok(())
+		//TODO could be better ?
+	}
+
+	fn serialize_bytes(self, v: &[u8]) -> Result {
+		self.ser_u64(v.len() as u64);
+		self.ecs(v);
+		Ok(())
+	}
+
+	fn serialize_none(self) -> Result { self.e1(0); Ok(()) }
+
+	fn serialize_some<U: ?Sized + Serialize>(self, v: &U) -> Result {
+		self.e1(1);
+		v.serialize(self)
+	}
+
+	fn serialize_unit(self) -> Result { Ok(()) }
+
+	fn serialize_unit_struct(self, _name: &'static str) -> Result { Ok(()) }
 
 	fn serialize_unit_variant(
-		self, _name: &'static str, _variant_index: u32, variant: &'static str,
+		self, _name: &'static str, variant_index: u32, _variant: &'static str,
 	) -> Result {
-		//self.serialize_str(variant)
-		todo!()
+		self.ser_u32(variant_index);
+		Ok(())
 	}
 
 	fn serialize_newtype_struct<U: ?Sized + Serialize>(
