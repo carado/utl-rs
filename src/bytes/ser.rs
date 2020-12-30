@@ -84,6 +84,12 @@ impl<B, R> BytesSer<B, R> where
 		self.slices().flat_map(|slice| slice.iter().copied())
 	}
 
+	pub fn clear(&mut self) {
+		self.ranges.clear();
+		self.buffer.clear();
+		self.last_start = 0;
+	}
+
 	pub fn ser_usize(&mut self, mut v: usize) {
 		loop {
 			let more = v > 0x80;

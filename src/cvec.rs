@@ -361,7 +361,9 @@ impl<T: Ord> Ord for CVec<T> {
 	}
 }
 
-unsafe impl<T> super::vec_trait::VecTrait<T> for CVec<T> {}
+unsafe impl<T> super::vec_trait::VecTrait<T> for CVec<T> {
+	fn clear(&mut self) { CVec::clear(self); }
+}
 
 #[test]
 fn test() {
