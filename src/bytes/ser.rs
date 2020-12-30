@@ -309,12 +309,16 @@ impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
 		Ok(())
 	}
 	
-	fn serialize_char(self, v: char) -> Result { self.ser_u32(v as _); Ok(()) }
-	fn serialize_str(self, v: &str) -> Result {
-		self.ser_usize(v.chars().count());
-		for char in v.chars() { self.serialize_char(char)?; }
+	fn serialize_char(self, v: char) -> Result {
+		let mut bytes = [0u8; 6];
+		self.ecs(v.encode_utf8(&mut bytes).as_bytes());
 		Ok(())
-		//TODO could be better ?
+	}
+
+	fn serialize_str(self, v: &str) -> Result {
+		self.ser_usize(v.len());
+		self.ecs(v.as_bytes());
+		Ok(())
 	}
 
 	fn serialize_bytes(self, v: &[u8]) -> Result {
