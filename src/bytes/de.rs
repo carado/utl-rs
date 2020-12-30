@@ -267,7 +267,19 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 	}
 
 	fn deserialize_str<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		todo!()
+		let len = self.de_usize()?;
+		let mut bytes = vec![0u8; len];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_str(std::str::from_utf8(&bytes).map_err(Error::Utf8)?)
+	}
+
+	fn deserialize_string<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let len = self.de_usize()?;
+		let mut bytes = vec![0u8; len];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_string(
+			String::from_utf8(bytes).map_err(|e| Error::Utf8(e.utf8_error()))?
+		)
 	}
 }
 
