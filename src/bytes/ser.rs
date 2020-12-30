@@ -1,4 +1,3 @@
-use std::io::Write;
 use crate::extend_ext::ExtendExt;
 use serde::Serialize;
 
@@ -19,12 +18,14 @@ impl std::fmt::Display for Infallible {
 
 pub type Result<T = ()> = std::result::Result<T, Infallible>;
 
-#[derive(Debug, Clone, Default)]
-pub struct BytesSer<T>(pub T);
+pub trait Buffer = std::ops::DerefMut<Target = [u8]> + ExtendExt<u8>;
 
-impl<T: ExtendExt<u8>> BytesSer<T> {
-	fn ecs(&mut self, s: &[u8]) { self.0.extend_copy_slice(s); }
-	fn e1(&mut self, b: u8) { self.0.extend_one(b); }
+#[derive(Debug, Clone, Default)]
+pub struct BytesSer<T> { buffer: T, ranges: Vec<std::ops::Range<usize>> }
+
+impl<T: Buffer> BytesSer<T> {
+	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
+	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
 
 	fn ser_u16(&mut self, v: u16) {
 		match v.leading_zeros() {
@@ -174,7 +175,7 @@ fn unsign<T, U>(v: T) -> U where
 	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
 }
 
-impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -186,10 +187,13 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	type SerializeStruct = Self;
 	type SerializeStructVariant = Self;
 
-	fn serialize_bool(self, v: bool) -> Result { Ok(self.0.extend_one(v as _)) }
+	fn serialize_bool(self, v: bool) -> Result {
+		self.buffer.extend_one(v as _);
+		Ok(())
+	}
 
-	fn serialize_u8(self, v: u8) -> Result { Ok(self.0.extend_one(v     )) }
-	fn serialize_i8(self, v: i8) -> Result { Ok(self.0.extend_one(v as _)) }
+	fn serialize_u8(self, v: u8) -> Result { Ok(self.buffer.extend_one(v     )) }
+	fn serialize_i8(self, v: i8) -> Result { Ok(self.buffer.extend_one(v as _)) }
 
 	fn serialize_u16(self, v: u16) -> Result { self.ser_u16(v); Ok(()) }
 	fn serialize_i16(self, v: i16) -> Result { self.ser_u16(unsign(v)); Ok(()) }
@@ -301,7 +305,7 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	}
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeSeq for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeSeq for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -313,7 +317,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeSeq for &'_ mut BytesSer<T> {
 }
 
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -324,7 +328,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -335,7 +339,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> 
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -346,7 +350,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T>
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeMap for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeMap for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -361,7 +365,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeMap for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -374,7 +378,7 @@ impl<T: ExtendExt<u8>> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: ExtendExt<u8>> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
+impl<T: Buffer> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
