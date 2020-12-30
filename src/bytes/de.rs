@@ -105,7 +105,7 @@ impl<'de, R: Read> BytesDe<'de, R> {
 				n@..=0x7F => n as u16 | 0x80,
 				n@0x80..  => ((n as u16) << 8) | self.byte()? as u16,
 			},
-			n => (n as u16 & 0x7F) | self.byte()? as u16,
+			n => ((n as u16 & 0x7F) << 8) | self.byte()? as u16,
 		})
 	}
 
@@ -225,10 +225,10 @@ impl<'de, R: Read> BytesDe<'de, R> {
 fn resign<T, U>(v: T) -> U where
 	T: num_traits::One + std::ops::BitAnd<Output = T>
 		+ std::ops::Shr<u32, Output = T> + num_traits::AsPrimitive<U> + Eq,
-	U: std::ops::Neg<Output = U> + Copy + 'static,
+	U: std::ops::Not<Output = U> + Copy + 'static,
 {
 	if v & T::one() == T::one() {
-		-(v >> 1).as_()
+		!(v >> 1).as_()
 	} else {
 		(v >> 1).as_()
 	}

@@ -259,12 +259,12 @@ fn test() {
 }
 
 fn unsign<T, U>(v: T) -> U where
-	T: std::ops::Neg<Output = T> + num_traits::AsPrimitive<U>
+	T: std::ops::Not<Output = T> + num_traits::AsPrimitive<U>
 		+ std::cmp::Ord + num_traits::Zero,
 	U: std::ops::Shl<u32, Output = U> + std::ops::Add<Output = U>
 		+ num_traits::One + Copy + 'static,
 {
-	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
+	if v < T::zero() { ((!v).as_() << 1) + U::one() } else { v.as_() << 1 }
 }
 
 impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
