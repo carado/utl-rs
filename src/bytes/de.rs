@@ -1,6 +1,5 @@
 use {
 	serde::{
-		Deserialize,
 		Deserializer,
 		de::{
 			Visitor,
@@ -20,7 +19,7 @@ pub enum Error {
 	InvalidEnumDiscriminant(u32),
 	Io(std::io::Error),
 	Custom(String),
-	SizeExceeded(u64),
+	AllocExceeded,
 	Utf8(std::str::Utf8Error),
 }
 
@@ -33,7 +32,7 @@ impl Display for Error {
 				write!(f, "invalid enum discriminant {}", n),
 			Self::Io    (e) => write!(f, "{}", e),
 			Self::Custom(e) => write!(f, "{}", e),
-			Self::SizeExceeded(n) => write!(f, "size header {} exceeds max", n),
+			Self::AllocExceeded => write!(f, "ran out of allocation"),
 			Self::Utf8(e) => write!(f, "UTF-8 decoding error: {}", e),
 		}
 	}
@@ -68,15 +67,28 @@ pub struct BytesDe<'de, R> { read: &'de mut R, alloc: usize }
 
 pub struct BytesDeLen<'a, 'de, R> { len: usize, de: &'a mut BytesDe<'de, R> }
 
-const SIZE_HEADER_MAX: u64 = 1 << 24;
-
 impl<'de, R: Read> BytesDe<'de, R> {
+	pub fn with_alloc_limit(read: &'de mut R, limit: usize) -> Self {
+		Self { read, alloc: limit }
+	}
+
+	pub fn new(read: &'de mut R) -> Self { Self::with_alloc_limit(read, 1 << 24) }
+
 	fn byte(&mut self) -> Result<u8> {
 		let mut byte = [0u8];
 		match self.read.read(&mut byte) {
 			Ok(0) => eof(),
 			Err(e) => Err(Error::Io(e)),
 			_ => Ok(byte[0]),
+		}
+	}
+
+	fn consume_alloc(&mut self, n: usize) -> Result {
+		if n > self.alloc {
+			Err(Error::AllocExceeded)
+		} else {
+			self.alloc -= n;
+			Ok(())
 		}
 	}
 
@@ -107,11 +119,7 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			}
 		}
 
-		if n > SIZE_HEADER_MAX {
-			Err(Error::SizeExceeded(n))
-		} else {
-			Ok(n as usize)
-		}
+		Ok(n as usize)
 	}
 
 	fn de_bool(&mut self) -> Result<bool> {
@@ -335,7 +343,7 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 		v.visit_newtype_struct(self)
 	}
 
-	fn deserialize_seq<V: Visitor<'de>>(mut self, v: V) -> Result<V::Value> {
+	fn deserialize_seq<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		let len = self.de_usize()?;
 		v.visit_seq(BytesDeLen { len, de: self })
 	}
@@ -364,20 +372,20 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	}
 
 	fn deserialize_enum<V: Visitor<'de>>(
-		self, _name: &'static str, variants: &'static [&'static str], v: V,
+		self, _name: &'static str, _variants: &'static [&'static str], v: V,
 	) -> Result<V::Value> {
 		v.visit_enum(self)
 	}
 
-	fn deserialize_identifier<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+	fn deserialize_identifier<V: Visitor<'de>>(self, _: V) -> Result<V::Value> {
 		unimplemented!("deserialize_identifier unsupported")
 	}
 
-	fn deserialize_ignored_any<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+	fn deserialize_ignored_any<V: Visitor<'de>>(self, _: V) -> Result<V::Value> {
 		unimplemented!("deserialize_ignored_any unsupported")
 	}
 
-	fn deserialize_any<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+	fn deserialize_any<V: Visitor<'de>>(self, _: V) -> Result<V::Value> {
 		unimplemented!("deserialize_any unsupported")
 	}
 
