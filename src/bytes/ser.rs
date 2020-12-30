@@ -248,21 +248,21 @@ impl<T: ExtendExt<u8>> serde::Serializer for &'_ mut BytesSer<T> {
 	fn serialize_newtype_struct<U: ?Sized + Serialize>(
 		self, _name: &'static str, value: &U,
 	) -> Result {
-		todo!()
+		value.serialize(self)
 	}
 
 	fn serialize_newtype_variant<U: ?Sized + Serialize>(
 		self,
-		_name: &'static str,
-		_variant_index: u32,
-		variant: &'static str,
-		value: &U,
+		_name: &'static str, variant_index: u32, _variant: &'static str, value: &U,
 	) -> Result {
-		todo!()
+		self.ser_u32(variant_index);
+		value.serialize(self)
 	}
 
-	fn serialize_seq(self, _len: Option<usize>) -> Result<Self> {
-		todo!()
+	fn serialize_seq(self, len: Option<usize>) -> Result<Self> {
+		//self.ser_u64(v.len() as u64);
+		todo!();
+		Ok(self)
 	}
 
 	fn serialize_tuple(self, len: usize) -> Result<Self> {
