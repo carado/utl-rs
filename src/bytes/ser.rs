@@ -56,7 +56,8 @@ impl<'a, B, R> BytesSerLen<'a, B, R> where
 		if self.opt_insert_len != usize::max_value() {
 			let start = self.ser.buffer.len();
 			self.ser.ser_usize(self.len);
-			self.ser.ranges[self.opt_insert_len] = start .. self.ser.buffer.len();
+			*unsafe { self.ser.ranges.get_unchecked_mut(self.opt_insert_len) } =
+				start .. self.ser.buffer.len();
 			self.ser.last_start = self.ser.buffer.len();
 		}
 	}
@@ -72,9 +73,11 @@ impl<B, R> BytesSer<B, R> where
 	pub fn len(&self) -> usize { self.buffer.len() }
 
 	pub fn slices(&self) -> impl std::iter::TrustedLen<Item = &'_ [u8]> {
-		self.ranges
-			.iter().map(move |range| &self.buffer[range.clone()])
-			.chain(std::iter::once(&self.buffer[self.last_start..]))
+		unsafe {
+			self.ranges
+				.iter().map(move |rng| self.buffer.get_unchecked(rng.clone()))
+				.chain(std::iter::once(self.buffer.get_unchecked(self.last_start..)))
+		}
 	}
 
 	pub fn bytes(&self) -> impl '_ + Iterator<Item = u8> {
@@ -109,7 +112,7 @@ impl<B, R> BytesSer<B, R> where
 			let masked = zeros & 0b111;
 
 			let mut xor = bytes_m1 << 6;
-			
+
 			if masked <= 1 {
 				let shift = 2 - masked;
 				self.e1(((0b1_00000 | (xor as u8 >> 3)) << shift) & 0b11_000000);
@@ -131,7 +134,7 @@ impl<B, R> BytesSer<B, R> where
 			let masked = zeros & 0b111;
 
 			let mut xor = bytes_m1 << 5;
-			
+
 			if masked <= 2 {
 				let shift = 3 - masked;
 				self.e1(((0b1_0000 | (xor as u8 >> 4)) << shift) & 0b111_00000);
@@ -153,7 +156,7 @@ impl<B, R> BytesSer<B, R> where
 			let masked = zeros & 0b111;
 
 			let mut xor = bytes_m1 << 4;
-			
+
 			if masked <= 3 {
 				let shift = 4 - masked;
 				self.e1(((0b1_000 | (xor as u8 >> 5)) << shift) & 0b1111_0000);
