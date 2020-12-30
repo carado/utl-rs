@@ -21,7 +21,11 @@ pub type Result<T = ()> = std::result::Result<T, Infallible>;
 pub trait Buffer = std::ops::DerefMut<Target = [u8]> + ExtendExt<u8>;
 
 #[derive(Debug, Clone, Default)]
-pub struct BytesSer<T> { buffer: T, ranges: Vec<std::ops::Range<usize>> }
+pub struct BytesSer<T> {
+	buffer: T,
+	ranges: Vec<std::ops::Range<usize>>,
+	last: usize,
+}
 
 impl<T: Buffer> BytesSer<T> {
 	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
@@ -30,7 +34,9 @@ impl<T: Buffer> BytesSer<T> {
 	pub fn len(&self) -> usize { self.buffer.len() }
 
 	pub fn slices(&self) -> impl std::iter::TrustedLen<Item = &'_ [u8]> {
-		self.ranges.iter().map(move |range| &self.buffer[range.clone()])
+		self.ranges
+			.iter().map(move |range| &self.buffer[range.clone()])
+			.chain(std::iter::once(&self.buffer[self.last..]))
 	}
 
 	pub fn bytes(&self) -> impl '_ + Iterator<Item = u8> {
