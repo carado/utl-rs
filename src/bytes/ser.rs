@@ -364,10 +364,10 @@ impl<'a, T: Buffer> serde::ser::SerializeSeq for BytesSerLen<'a, T> {
 	type Error = Infallible;
 
 	fn serialize_element<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
-		todo!()
+		value.serialize(&mut *self.ser)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { self.end(); Ok(()) }
 }
 
 
@@ -376,10 +376,10 @@ impl<T: Buffer> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
 	type Error = Infallible;
 
 	fn serialize_element<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
-		todo!()
+		value.serialize(&mut **self)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { Ok(()) }
 }
 
 impl<T: Buffer> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
