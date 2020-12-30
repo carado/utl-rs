@@ -43,6 +43,16 @@ impl<T: Buffer> BytesSer<T> {
 		self.slices().flat_map(|slice| slice.iter().copied())
 	}
 
+	pub fn ser_usize(&mut self, mut v: usize) {
+		loop {
+			let more = v > 0x80;
+			self.e1((v as u8 & 0x7F) | ((more as u8) << 7));
+			if !more { break; }
+			v -= 0x80;
+			v >>= 7;
+		}
+	}
+
 	fn ser_u16(&mut self, v: u16) {
 		match v.leading_zeros() {
 			0     => self.ecs(&[0x80, (v >> 8) as u8, v as u8]),
@@ -235,14 +245,14 @@ impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 	
 	fn serialize_char(self, v: char) -> Result { self.ser_u32(v as _); Ok(()) }
 	fn serialize_str(self, v: &str) -> Result {
-		self.ser_u64(v.chars().count() as u64);
+		self.ser_usize(v.chars().count());
 		for char in v.chars() { self.serialize_char(char)?; }
 		Ok(())
 		//TODO could be better ?
 	}
 
 	fn serialize_bytes(self, v: &[u8]) -> Result {
-		self.ser_u64(v.len() as u64);
+		self.ser_usize(v.len());
 		self.ecs(v);
 		Ok(())
 	}
@@ -280,7 +290,7 @@ impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 	}
 
 	fn serialize_seq(self, len: Option<usize>) -> Result<Self> {
-		//self.ser_u64(v.len() as u64);
+		//self.ser_usize(v.len());
 		todo!();
 		Ok(self)
 	}
