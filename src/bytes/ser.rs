@@ -2,6 +2,7 @@ use crate::extend_ext::ExtendExt;
 use serde::Serialize;
 
 #[derive(Debug)]
+#[allow(unreachable_code)]
 pub struct Infallible(!);
 
 impl std::error::Error for Infallible {}
