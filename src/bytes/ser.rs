@@ -1,5 +1,6 @@
 use crate::extend_ext::ExtendExt;
 use serde::Serialize;
+use crate::vec_trait::VecTrait;
 
 #[derive(Debug)]
 #[allow(unreachable_code)]
@@ -19,23 +20,21 @@ impl std::fmt::Display for Infallible {
 
 pub type Result<T = ()> = std::result::Result<T, Infallible>;
 
-pub trait Buffer = std::ops::DerefMut<Target = [u8]> + ExtendExt<u8>;
-
 #[derive(Debug, Clone, Default)]
-pub struct BytesSer<T> {
-	buffer: T,
+pub struct BytesSer<B> {
+	buffer: B,
 	ranges: Vec<std::ops::Range<usize>>,
 	last: usize,
 }
 
-pub struct BytesSerLen<'a, T> {
-	ser: &'a mut BytesSer<T>,
+pub struct BytesSerLen<'a, B> {
+	ser: &'a mut BytesSer<B>,
 	opt_insert_len: usize,
 	len: usize,
 }
 
-impl<'a, T: Buffer> BytesSerLen<'a, T> {
-	fn new(ser: &'a mut BytesSer<T>, opt_len: Option<usize>) -> Self {
+impl<'a, B: VecTrait<u8>> BytesSerLen<'a, B> {
+	fn new(ser: &'a mut BytesSer<B>, opt_len: Option<usize>) -> Self {
 		let opt_insert_len = match opt_len {
 			Some(len) => { ser.ser_usize(len); usize::max_value() },
 			None => {
@@ -57,7 +56,7 @@ impl<'a, T: Buffer> BytesSerLen<'a, T> {
 	}
 }
 
-impl<T: Buffer> BytesSer<T> {
+impl<B: VecTrait<u8>> BytesSer<B> {
 	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
 	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
 
@@ -231,15 +230,15 @@ fn unsign<T, U>(v: T) -> U where
 	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
 }
 
-impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
+impl<'a, B: VecTrait<u8>> serde::Serializer for &'a mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
-	type SerializeSeq = BytesSerLen<'a, T>;
+	type SerializeSeq = BytesSerLen<'a, B>;
 	type SerializeTuple = Self;
 	type SerializeTupleStruct = Self;
 	type SerializeTupleVariant = Self;
-	type SerializeMap = BytesSerLen<'a, T>;
+	type SerializeMap = BytesSerLen<'a, B>;
 	type SerializeStruct = Self;
 	type SerializeStructVariant = Self;
 
@@ -319,7 +318,7 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 		value.serialize(self)
 	}
 
-	fn serialize_seq(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
+	fn serialize_seq(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, B>> {
 		Ok(BytesSerLen::new(self, opt_len))
 	}
 
@@ -340,7 +339,7 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 		Ok(self)
 	}
 
-	fn serialize_map(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
+	fn serialize_map(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, B>> {
 		Ok(BytesSerLen::new(self, opt_len))
 	}
 
@@ -360,7 +359,7 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 	}
 }
 
-impl<'a, T: Buffer> serde::ser::SerializeSeq for BytesSerLen<'a, T> {
+impl<'a, B: VecTrait<u8>> serde::ser::SerializeSeq for BytesSerLen<'a, B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -373,7 +372,7 @@ impl<'a, T: Buffer> serde::ser::SerializeSeq for BytesSerLen<'a, T> {
 }
 
 
-impl<T: Buffer> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
+impl<B: VecTrait<u8>> serde::ser::SerializeTuple for &'_ mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -384,7 +383,7 @@ impl<T: Buffer> serde::ser::SerializeTuple for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { Ok(()) }
 }
 
-impl<T: Buffer> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
+impl<B: VecTrait<u8>> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -395,7 +394,7 @@ impl<T: Buffer> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { Ok(()) }
 }
 
-impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
+impl<B: VecTrait<u8>> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -406,7 +405,7 @@ impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { Ok(()) }
 }
 
-impl<'a, T: Buffer> serde::ser::SerializeMap for BytesSerLen<'a, T> {
+impl<'a, B: VecTrait<u8>> serde::ser::SerializeMap for BytesSerLen<'a, B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -422,7 +421,7 @@ impl<'a, T: Buffer> serde::ser::SerializeMap for BytesSerLen<'a, T> {
 	fn end(self) -> Result { self.end(); Ok(()) }
 }
 
-impl<T: Buffer> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
+impl<B: VecTrait<u8>> serde::ser::SerializeStruct for &'_ mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -435,7 +434,7 @@ impl<T: Buffer> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { Ok(()) }
 }
 
-impl<T: Buffer> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
+impl<B: VecTrait<u8>> serde::ser::SerializeStructVariant for &'_ mut BytesSer<B> {
 	type Ok = ();
 	type Error = Infallible;
 
