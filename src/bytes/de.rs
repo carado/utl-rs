@@ -73,6 +73,29 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			_ => Ok(byte[0]),
 		}
 	}
+
+	fn de_u16(&mut self) -> Result<u16> {
+		Ok(match self.byte()? {
+			n@0..=0x7F => n as u16,
+			0x80 => match self.byte()? {
+				n@..=0x7F => n as u16 | 0x80,
+				n@0x80..  => ((n as u16) << 8) | self.byte()? as u16,
+			},
+			n => (n as u16 & 0x7F) | self.byte()? as u16,
+		})
+	}
+}
+
+fn resign<T, U>(v: T) -> U where
+	T: num_traits::One + std::ops::BitAnd<Output = T>
+		+ std::ops::Shr<u32, Output = T> + num_traits::AsPrimitive<U> + Eq,
+	U: std::ops::Neg<Output = U> + Copy + 'static,
+{
+	if v & T::one() == T::one() {
+		-(v >> 1).as_()
+	} else {
+		(v >> 1).as_()
+	}
 }
 
 impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
@@ -92,6 +115,14 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 
 	fn deserialize_i8<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		v.visit_i8(self.byte()? as _)
+	}
+
+	fn deserialize_u16<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_u16(self.de_u16()?)
+	}
+
+	fn deserialize_i16<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_i16(resign(self.de_u16()?))
 	}
 }
 
