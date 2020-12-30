@@ -122,6 +122,14 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		Ok(n as usize)
 	}
 
+	fn de_usize_buf(&mut self) -> Result<Vec<u8>> {
+		let len = self.de_usize()?;
+		self.consume_alloc(len)?;
+		let mut buf = vec![0u8; len];
+		self.read.read_exact(&mut buf).map_err(Error::Io)?;
+		Ok(buf)
+	}
+
 	fn de_bool(&mut self) -> Result<bool> {
 		Ok(match self.byte()? {
 			0 => false,
@@ -294,29 +302,22 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	}
 
 	fn deserialize_str<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let mut bytes = vec![0u8; self.de_usize()?];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
-		v.visit_str(std::str::from_utf8(&bytes).map_err(Error::Utf8)?)
+		v.visit_str(std::str::from_utf8(&self.de_usize_buf()?).map_err(Error::Utf8)?)
 	}
 
 	fn deserialize_string<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let mut bytes = vec![0u8; self.de_usize()?];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
 		v.visit_string(
-			String::from_utf8(bytes).map_err(|e| Error::Utf8(e.utf8_error()))?
+			String::from_utf8(self.de_usize_buf()?)
+				.map_err(|e| Error::Utf8(e.utf8_error()))?
 		)
 	}
 
 	fn deserialize_bytes<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let mut bytes = vec![0u8; self.de_usize()?];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
-		v.visit_bytes(&bytes)
+		v.visit_bytes(&self.de_usize_buf()?)
 	}
 
 	fn deserialize_byte_buf<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let mut bytes = vec![0u8; self.de_usize()?];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
-		v.visit_byte_buf(bytes)
+		v.visit_byte_buf(self.de_usize_buf()?)
 	}
 
 	fn deserialize_option<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
