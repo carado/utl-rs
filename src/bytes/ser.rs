@@ -77,6 +77,28 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 			);
 		}
 	}
+
+	fn ser_u128(&mut self, v: u128) {
+		if v < 0b1_0000 {
+			self.e1(v as _);
+		} else {
+			let zeros = v.leading_zeros();
+			let bytes_m1 = (((128 + 7 - zeros) / 8) - 1) as usize; // 0..=15
+			let masked = zeros & 0b111;
+
+			let mut xor = bytes_m1 << 4;
+			
+			if masked <= 3 {
+				let shift = 4 - masked;
+				self.e1(((0b1_000 | (xor as u8 >> 5)) << shift) & 0b1111_0000);
+				xor = ((xor ^ 0b1_0000) >> 1) << shift;
+			}
+
+			self.ecs(
+				&(v ^ ((xor as u128) << (bytes_m1 * 8))).to_be_bytes()[15 - bytes_m1..]
+			);
+		}
+	}
 }
 
 #[test]
@@ -112,6 +134,20 @@ fn test() {
 			let n = (((1u64 << i) - 1) & b) | (1u64 << i);
 			let mut v = BytesSer(Vec::<u8>::new());
 			v.ser_u64(n);
+			print!("{:2}: ", i);
+			for b in v.0.into_iter() { print!("{:08b} ", b); }
+			println!();
+		}
+	}
+
+	println!();
+
+	for i in 0..=127 {
+		//for b in [0, !0].iter().copied() {
+		for b in [0].iter().copied() {
+			let n = (((1u128 << i) - 1) & b) | (1u128 << i);
+			let mut v = BytesSer(Vec::<u8>::new());
+			v.ser_u128(n);
 			print!("{:2}: ", i);
 			for b in v.0.into_iter() { print!("{:08b} ", b); }
 			println!();
