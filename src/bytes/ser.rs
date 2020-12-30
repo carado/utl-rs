@@ -339,12 +339,12 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 		Ok(self)
 	}
 
-	fn serialize_map(self, _len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
-		todo!()
+	fn serialize_map(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
+		Ok(BytesSerLen::new(self, opt_len))
 	}
 
-	fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self> {
-		todo!()
+	fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self> {
+		Ok(self)
 	}
 
 	fn serialize_struct_variant(
