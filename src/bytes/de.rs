@@ -65,6 +65,11 @@ pub struct BytesDe<'de, R> {
 	alloc: usize,
 }
 
+pub struct BytesDeLen<'a, 'de, R> {
+	len: usize,
+	de: &'a mut BytesDe<'de, R>,
+}
+
 const SIZE_HEADER_MAX: u64 = 1 << 24;
 
 impl<'de, R: Read> BytesDe<'de, R> {
@@ -109,6 +114,14 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		} else {
 			Ok(n as usize)
 		}
+	}
+
+	fn de_bool(&mut self) -> Result<bool> {
+		Ok(match self.byte()? {
+			0 => false,
+			1 => true,
+			n => return Err(Error::InvalidBool(n)),
+		})
 	}
 
 	fn de_u32(&mut self) -> Result<u32> {
@@ -197,15 +210,11 @@ fn resign<T, U>(v: T) -> U where
 	}
 }
 
-impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
+impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	type Error = Error;
 
 	fn deserialize_bool<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		match self.byte()? {
-			0 => v.visit_bool(false),
-			1 => v.visit_bool(true ),
-			n => Err(Error::InvalidBool(n)),
-		}
+		v.visit_bool(self.de_bool()?)
 	}
 
 	fn deserialize_u8<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
@@ -267,19 +276,98 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 	}
 
 	fn deserialize_str<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let len = self.de_usize()?;
-		let mut bytes = vec![0u8; len];
+		let mut bytes = vec![0u8; self.de_usize()?];
 		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
 		v.visit_str(std::str::from_utf8(&bytes).map_err(Error::Utf8)?)
 	}
 
 	fn deserialize_string<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		let len = self.de_usize()?;
-		let mut bytes = vec![0u8; len];
+		let mut bytes = vec![0u8; self.de_usize()?];
 		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
 		v.visit_string(
 			String::from_utf8(bytes).map_err(|e| Error::Utf8(e.utf8_error()))?
 		)
 	}
+
+	fn deserialize_bytes<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let mut bytes = vec![0u8; self.de_usize()?];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_bytes(&bytes)
+	}
+
+	fn deserialize_byte_buf<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let mut bytes = vec![0u8; self.de_usize()?];
+		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		v.visit_byte_buf(bytes)
+	}
+
+	fn deserialize_option<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		if self.de_bool()? {
+			v.visit_some(self)
+		} else {
+			v.visit_none()
+		}
+	}
+
+	fn deserialize_unit<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_unit()
+	}
+
+	fn deserialize_unit_struct<V: Visitor<'de>>(
+		self, _name: &'static str, v: V,
+	) -> Result<V::Value> {
+		self.deserialize_unit(v)
+	}
+
+	fn deserialize_newtype_struct<V: Visitor<'de>>(
+		self, _name: &'static str, v: V,
+	) -> Result<V::Value> {
+		v.visit_newtype_struct(self)
+	}
+
+	fn deserialize_seq<V: Visitor<'de>>(mut self, v: V) -> Result<V::Value> {
+		let len = self.de_usize()?;
+		v.visit_seq(BytesDeLen { len, de: self })
+	}
+
+	fn deserialize_tuple<V: Visitor<'de>>(
+		self, len: usize, v: V,
+	) -> Result<V::Value> {
+		v.visit_seq(BytesDeLen { len, de: self })
+	}
+
+	fn deserialize_tuple_struct<V: Visitor<'de>>(
+		self, _name: &'static str, len: usize, v: V,
+	) -> Result<V::Value> {
+		v.visit_seq(BytesDeLen { len, de: self })
+	}
+}
+
+impl<'a, 'de, R> serde::de::SeqAccess<'de> for BytesDeLen<'a, 'de, R> where
+	R: Read,
+{
+	type Error = Error;
+
+	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>> where
+		T: serde::de::DeserializeSeed<'de>,
+	{
+		Ok(if self.len == 0 {
+			None
+		} else {
+			self.len -= 1;
+			Some(seed.deserialize(&mut *self.de)?)
+		})
+	}
+
+	fn next_element<T: Deserialize<'de>>(&mut self) -> Result<Option<T>> {
+		Ok(if self.len == 0 {
+			None
+		} else {
+			self.len -= 1;
+			Some(T::deserialize(&mut *self.de)?)
+		})
+	}
+
+	fn size_hint(&self) -> Option<usize> { Some(self.len) }
 }
 
