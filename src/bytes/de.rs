@@ -84,6 +84,79 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			n => (n as u16 & 0x7F) | self.byte()? as u16,
 		})
 	}
+
+	fn de_u32(&mut self) -> Result<u32> {
+		let head = self.byte()?;
+		if head >> 6 == 0 {
+			Ok(head as _)
+		} else if head & 0b111111 == 0 {
+			let next = self.byte()?;
+			let not_shift = head >> 7;
+			let extra = (head | (next >> 2)) >> (4 + not_shift);
+			let mut bytes = [0u8; 4];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(
+				u32::from_be_bytes(bytes)
+				| (
+					(((next & !(not_shift << 7)) | (0b1_000000 << not_shift)) as u32)
+					<< (extra * 8)
+				)
+			)
+		} else {
+			let extra = head >> 6;
+			let mut bytes = [0u8; 4];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(u32::from_be_bytes(bytes) | ((head as u32 & 0b111111) << (extra * 8)))
+		}
+	}
+
+	fn de_u64(&mut self) -> Result<u64> {
+		let head = self.byte()?;
+		if head >> 5 == 0 {
+			Ok(head as _)
+		} else if head & 0b11111 == 0 {
+			let next = self.byte()?;
+			let shift = head.leading_zeros();
+			let extra = (head | (next >> 3)) >> (4 - shift);
+			let mut bytes = [0u8; 8];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(
+				u64::from_be_bytes(bytes)
+				| (
+					(((next & (0x8F >> shift)) | (0x80 >> shift)) as u64) << (extra * 8)
+				)
+			)
+		} else {
+			let extra = head >> 5;
+			let mut bytes = [0u8; 8];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(u64::from_be_bytes(bytes) | ((head as u64 & 0b11111) << (extra * 8)))
+		}
+	}
+
+	fn de_u128(&mut self) -> Result<u128> {
+		let head = self.byte()?;
+		if head >> 4 == 0 {
+			Ok(head as _)
+		} else if head & 0b1111 == 0 {
+			let next = self.byte()?;
+			let shift = head.leading_zeros();
+			let extra = (head | (next >> 4)) >> (3 - shift);
+			let mut bytes = [0u8; 16];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(
+				u128::from_be_bytes(bytes)
+				| (
+					(((next & (0x8F >> shift)) | (0x80 >> shift)) as u128) << (extra * 8)
+				)
+			)
+		} else {
+			let extra = head >> 4;
+			let mut bytes = [0u8; 16];
+			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			Ok(u128::from_be_bytes(bytes) | ((head as u128 & 0b1111) << (extra * 8)))
+		}
+	}
 }
 
 fn resign<T, U>(v: T) -> U where
@@ -123,6 +196,30 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 
 	fn deserialize_i16<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		v.visit_i16(resign(self.de_u16()?))
+	}
+
+	fn deserialize_u32<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_u32(self.de_u32()?)
+	}
+
+	fn deserialize_i32<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_i32(resign(self.de_u32()?))
+	}
+
+	fn deserialize_u64<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_u64(self.de_u64()?)
+	}
+
+	fn deserialize_i64<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_i64(resign(self.de_u64()?))
+	}
+
+	fn deserialize_u128<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_u128(self.de_u128()?)
+	}
+
+	fn deserialize_i128<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_i128(resign(self.de_u128()?))
 	}
 }
 
