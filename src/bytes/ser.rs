@@ -95,6 +95,16 @@ impl<B, R> BytesSer<B, R> where
 		Self { last_start: 0, buffer, ranges }
 	}
 
+	pub fn serialize<T: Serialize>(&mut self, value: &T) -> Result {
+		value.serialize(self)?;
+		Ok(())
+	}
+
+	pub fn into_inner(self) -> (B, R, usize) {
+		let Self { buffer, ranges, last_start } = self;
+		(buffer, ranges, last_start)
+	}
+
 	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
 
 	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }

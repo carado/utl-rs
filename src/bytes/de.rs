@@ -74,6 +74,12 @@ impl<'de, R: Read> BytesDe<'de, R> {
 
 	pub fn new(read: &'de mut R) -> Self { Self::with_alloc_limit(read, 1 << 24) }
 
+	pub fn end(self) -> &'de mut R { self.read }
+
+	pub fn deserialize<T: serde::Deserialize<'de>>(&mut self) -> Result<T> {
+		T::deserialize(self)
+	}
+
 	fn byte(&mut self) -> Result<u8> {
 		let mut byte = [0u8];
 		match self.read.read(&mut byte) {
