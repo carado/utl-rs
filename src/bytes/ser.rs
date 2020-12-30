@@ -50,8 +50,8 @@ impl<'a, T: Buffer> BytesSerLen<'a, T> {
 		if self.opt_insert_len != usize::max_value() {
 			let start = self.ser.buffer.len();
 			self.ser.ser_usize(self.len);
-			self.ser.ranges[self.opt_insert_len] =
-				start .. std::mem::replace(&mut self.ser.last, self.ser.buffer.len());
+			self.ser.ranges[self.opt_insert_len] = start .. self.ser.buffer.len();
+			self.ser.last = self.ser.buffer.len();
 		}
 	}
 }
