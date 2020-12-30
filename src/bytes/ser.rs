@@ -19,6 +19,7 @@ impl std::fmt::Display for Infallible {
 
 pub type Result<T = ()> = std::result::Result<T, Infallible>;
 
+#[derive(Debug, Clone, Default)]
 pub struct BytesSer<T>(pub T);
 
 impl<T: ExtendExt<u8>> BytesSer<T> {
@@ -103,55 +104,64 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 
 #[test]
 fn test() {
-	for i in 0..=15 {
-		for b in [0, !0].iter().copied() {
-			let n = (((1u16 << i) - 1) & b) | (1u16 << i);
-			let mut v = BytesSer(Vec::<u8>::new());
+	fn f(g: impl Fn(u128, &mut BytesSer<Vec<u8>>)) {
+		let [mut t0, mut t1]: [BytesSer<Vec<u8>>; 2] = [<_>::default(), <_>::default()];
+		g( 0, &mut t0);
+		g(!0, &mut t1);
+		assert_eq!(t0.0.len(), t1.0.len());
+		for (b0, b1) in t0.0.iter().zip(t1.0.iter()) {
+			for bit in (0..8).rev() {
+				print!("{}", match ((b0 >> bit) & 1, (b1 >> bit) & 1) {
+					(0, 0) => '0',
+					(1, 1) => '1',
+					(0, 1) => '.',
+					_ => unreachable!(),
+				});
+			}
+			print!(" ");
+		}
+	}
+
+	for i in 0..16 {
+		print!("{:3}: ", i);
+		f(|b, v| {
+			let n = (((1u16 << i) - 1) & b as u16) | (1u16 << i);
 			v.ser_u16(n);
-			print!("{:2}: ", i);
-			for b in v.0.into_iter() { print!("{:08b} ", b); }
-			println!();
-		}
+		});
+		println!();
 	}
 
 	println!();
 
-	for i in 0..=31 {
-		for b in [0, !0].iter().copied() {
-			let n = (((1u32 << i) - 1) & b) | (1u32 << i);
-			let mut v = BytesSer(Vec::<u8>::new());
+	for i in 0..32 {
+		print!("{:3}: ", i);
+		f(|b, v| {
+			let n = (((1u32 << i) - 1) & b as u32) | (1u32 << i);
 			v.ser_u32(n);
-			print!("{:2}: ", i);
-			for b in v.0.into_iter() { print!("{:08b} ", b); }
-			println!();
-		}
+		});
+		println!();
 	}
 
 	println!();
 
-	for i in 0..=63 {
-		for b in [0, !0].iter().copied() {
-			let n = (((1u64 << i) - 1) & b) | (1u64 << i);
-			let mut v = BytesSer(Vec::<u8>::new());
+	for i in 0..64 {
+		print!("{:3}: ", i);
+		f(|b, v| {
+			let n = (((1u64 << i) - 1) & b as u64) | (1u64 << i);
 			v.ser_u64(n);
-			print!("{:2}: ", i);
-			for b in v.0.into_iter() { print!("{:08b} ", b); }
-			println!();
-		}
+		});
+		println!();
 	}
 
 	println!();
 
-	for i in 0..=127 {
-		//for b in [0, !0].iter().copied() {
-		for b in [0].iter().copied() {
-			let n = (((1u128 << i) - 1) & b) | (1u128 << i);
-			let mut v = BytesSer(Vec::<u8>::new());
+	for i in 0..128 {
+		print!("{:3}: ", i);
+		f(|b, v| {
+			let n = (((1u128 << i) - 1) & b as u128) | (1u128 << i);
 			v.ser_u128(n);
-			print!("{:2}: ", i);
-			for b in v.0.into_iter() { print!("{:08b} ", b); }
-			println!();
-		}
+		});
+		println!();
 	}
 }
 
