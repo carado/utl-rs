@@ -27,6 +27,35 @@ pub struct BytesSer<T> {
 	last: usize,
 }
 
+pub struct BytesSerLen<'a, T> {
+	ser: &'a mut BytesSer<T>,
+	opt_insert_len: usize,
+	len: usize,
+}
+
+impl<'a, T: Buffer> BytesSerLen<'a, T> {
+	fn new(ser: &'a mut BytesSer<T>, opt_len: Option<usize>) -> Self {
+		let opt_insert_len = match opt_len {
+			Some(len) => { ser.ser_usize(len); usize::max_value() },
+			None => {
+				let range_i = ser.ranges.len();
+				ser.ranges.push(usize::max_value() .. usize::max_value());
+				range_i
+			},
+		};
+		Self { ser, opt_insert_len, len: 0, }
+	}
+
+	fn end(self) {
+		if self.opt_insert_len != usize::max_value() {
+			let start = self.ser.buffer.len();
+			self.ser.ser_usize(self.len);
+			self.ser.ranges[self.opt_insert_len] =
+				start .. std::mem::replace(&mut self.ser.last, self.ser.buffer.len());
+		}
+	}
+}
+
 impl<T: Buffer> BytesSer<T> {
 	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
 	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
@@ -201,15 +230,15 @@ fn unsign<T, U>(v: T) -> U where
 	if v < T::zero() { ((-v).as_() << 1) + U::one() } else { v.as_() << 1 }
 }
 
-impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
+impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 	type Ok = ();
 	type Error = Infallible;
 
-	type SerializeSeq = Self;
+	type SerializeSeq = BytesSerLen<'a, T>;
 	type SerializeTuple = Self;
 	type SerializeTupleStruct = Self;
 	type SerializeTupleVariant = Self;
-	type SerializeMap = Self;
+	type SerializeMap = BytesSerLen<'a, T>;
 	type SerializeStruct = Self;
 	type SerializeStructVariant = Self;
 
@@ -289,10 +318,8 @@ impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 		value.serialize(self)
 	}
 
-	fn serialize_seq(self, len: Option<usize>) -> Result<Self> {
-		//self.ser_usize(v.len());
-		todo!();
-		Ok(self)
+	fn serialize_seq(self, opt_len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
+		Ok(BytesSerLen::new(self, opt_len))
 	}
 
 	fn serialize_tuple(self, len: usize) -> Result<Self> {
@@ -314,7 +341,9 @@ impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 		//Ok(self)
 	}
 
-	fn serialize_map(self, _len: Option<usize>) -> Result<Self> { todo!() }
+	fn serialize_map(self, _len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
+		todo!()
+	}
 
 	fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self> {
 		todo!()
@@ -331,7 +360,7 @@ impl<T: Buffer> serde::Serializer for &'_ mut BytesSer<T> {
 	}
 }
 
-impl<T: Buffer> serde::ser::SerializeSeq for &'_ mut BytesSer<T> {
+impl<'a, T: Buffer> serde::ser::SerializeSeq for BytesSerLen<'a, T> {
 	type Ok = ();
 	type Error = Infallible;
 
@@ -376,7 +405,7 @@ impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { todo!() }
 }
 
-impl<T: Buffer> serde::ser::SerializeMap for &'_ mut BytesSer<T> {
+impl<'a, T: Buffer> serde::ser::SerializeMap for BytesSerLen<'a, T> {
 	type Ok = ();
 	type Error = Infallible;
 
