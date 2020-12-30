@@ -86,6 +86,13 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		})
 	}
 
+	fn de_usize(&mut self) -> Result<usize> {
+		let mut n = 0;
+		loop {
+			let byte = self.byte()?;
+		}
+	}
+
 	fn de_u32(&mut self) -> Result<u32> {
 		let head = self.byte()?;
 		if head >> 6 == 0 {
@@ -239,6 +246,10 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 				}
 			},
 		})
+	}
+
+	fn deserialize_str<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		todo!()
 	}
 }
 
