@@ -322,23 +322,21 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 		Ok(BytesSerLen::new(self, opt_len))
 	}
 
-	fn serialize_tuple(self, len: usize) -> Result<Self> {
-		todo!()
-	}
+	fn serialize_tuple(self, _len: usize) -> Result<Self> { Ok(self) }
 
-	fn serialize_tuple_struct(self, _: &'static str, len: usize) -> Result<Self> {
-		todo!()
+	fn serialize_tuple_struct(self, _: &'static str, _: usize) -> Result<Self> {
+		Ok(self)
 	}
 
 	fn serialize_tuple_variant(
 		self,
 		_name: &'static str,
-		_variant_index: u32,
-		variant: &'static str,
+		variant_index: u32,
+		_variant: &'static str,
 		_len: usize,
-	) -> Result<Self::SerializeTupleVariant> {
-		todo!()
-		//Ok(self)
+	) -> Result<Self> {
+		self.ser_u32(variant_index);
+		Ok(self)
 	}
 
 	fn serialize_map(self, _len: Option<usize>) -> Result<BytesSerLen<'a, T>> {
