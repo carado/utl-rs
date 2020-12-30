@@ -271,8 +271,15 @@ impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
 	fn serialize_u64(self, v: u64) -> Result { self.ser_u64(v); Ok(()) }
 	fn serialize_i64(self, v: i64) -> Result { self.ser_u64(unsign(v)); Ok(()) }
 
-	fn serialize_u128(self, v: u128) -> Result { self.ser_u128(v); Ok(()) }
-	fn serialize_i128(self, v: i128) -> Result { self.ser_u128(unsign(v)); Ok(()) }
+	fn serialize_u128(self, v: u128) -> Result {
+		self.ser_u128(v);
+		Ok(())
+	}
+
+	fn serialize_i128(self, v: i128) -> Result {
+		self.ser_u128(unsign(v));
+		Ok(())
+	}
 
 	fn serialize_f32(self, v: f32) -> Result {
 		self.ecs(&v.to_bits().to_le_bytes());
