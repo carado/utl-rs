@@ -364,6 +364,7 @@ impl<'a, T: Buffer> serde::ser::SerializeSeq for BytesSerLen<'a, T> {
 	type Error = Infallible;
 
 	fn serialize_element<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
+		self.len += 1;
 		value.serialize(&mut *self.ser)
 	}
 
@@ -387,10 +388,10 @@ impl<T: Buffer> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<T> {
 	type Error = Infallible;
 
 	fn serialize_field<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
-		todo!()
+		value.serialize(&mut **self)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { Ok(()) }
 }
 
 impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
@@ -398,10 +399,10 @@ impl<T: Buffer> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<T> {
 	type Error = Infallible;
 
 	fn serialize_field<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
-		todo!()
+		value.serialize(&mut **self)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { Ok(()) }
 }
 
 impl<'a, T: Buffer> serde::ser::SerializeMap for BytesSerLen<'a, T> {
@@ -409,14 +410,15 @@ impl<'a, T: Buffer> serde::ser::SerializeMap for BytesSerLen<'a, T> {
 	type Error = Infallible;
 
 	fn serialize_key<U: ?Sized + Serialize>(&mut self, key: &U) -> Result {
-		todo!()
+		self.len += 1;
+		key.serialize(&mut *self.ser)
 	}
 
 	fn serialize_value<U: ?Sized + Serialize>(&mut self, value: &U) -> Result {
-		todo!()
+		value.serialize(&mut *self.ser)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { self.end(); Ok(()) }
 }
 
 impl<T: Buffer> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
@@ -424,12 +426,12 @@ impl<T: Buffer> serde::ser::SerializeStruct for &'_ mut BytesSer<T> {
 	type Error = Infallible;
 
 	fn serialize_field<U: ?Sized + Serialize>(
-		&mut self, key: &'static str, value: &U,
+		&mut self, _key: &'static str, value: &U,
 	) -> Result {
-		todo!()
+		value.serialize(&mut **self)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { Ok(()) }
 }
 
 impl<T: Buffer> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
@@ -437,12 +439,12 @@ impl<T: Buffer> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
 	type Error = Infallible;
 
 	fn serialize_field<U: ?Sized + Serialize>(
-		&mut self, key: &'static str, value: &U,
+		&mut self, _key: &'static str, value: &U,
 	) -> Result {
-		todo!()
+		value.serialize(&mut **self)
 	}
 
-	fn end(self) -> Result { todo!() }
+	fn end(self) -> Result { Ok(()) }
 }
 
 
