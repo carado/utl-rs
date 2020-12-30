@@ -17,7 +17,7 @@ pub enum Error {
 	MalformedUtf8([u8; 6]),
 	Io(std::io::Error),
 	Custom(String),
-	SizeExceeded(usize),
+	SizeExceeded(u64),
 	Utf8(std::str::Utf8Error),
 }
 
@@ -65,6 +65,8 @@ pub struct BytesDe<'de, R> {
 	alloc: usize,
 }
 
+const SIZE_HEADER_MAX: u64 = 1 << 24;
+
 impl<'de, R: Read> BytesDe<'de, R> {
 	fn byte(&mut self) -> Result<u8> {
 		let mut byte = [0u8];
@@ -87,9 +89,25 @@ impl<'de, R: Read> BytesDe<'de, R> {
 	}
 
 	fn de_usize(&mut self) -> Result<usize> {
-		let mut n = 0;
+		let mut n: u64 = 0;
+		let mut bits = 0;
 		loop {
 			let byte = self.byte()?;
+
+			n |= ((byte & 0x7F) as u64) << bits;
+
+			if byte >> 7 == 1 {
+				n += 0x80 << bits;
+				bits += 7;
+			} else {
+				break;
+			}
+		}
+
+		if n > SIZE_HEADER_MAX {
+			Err(Error::SizeExceeded(n))
+		} else {
+			Ok(n as usize)
 		}
 	}
 
