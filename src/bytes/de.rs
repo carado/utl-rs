@@ -18,6 +18,7 @@ pub enum Error {
 	Io(std::io::Error),
 	Custom(String),
 	SizeExceeded(usize),
+	Utf8(std::str::Utf8Error),
 }
 
 impl Display for Error {
@@ -220,6 +221,24 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 
 	fn deserialize_i128<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		v.visit_i128(resign(self.de_u128()?))
+	}
+
+	fn deserialize_char<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_char(match self.byte()? {
+			n@0..=0x7F => n as u8 as char,
+			n => {
+				let mut bytes = [0u8; 6];
+				bytes[0] = n;
+				let range = 1 .. n.leading_ones() as usize;
+				self.read.read_exact(&mut bytes[range]).map_err(Error::Io)?;
+				match
+					std::str::from_utf8(&bytes[range]).map_err(Error::Utf8)?.chars().next()
+				{
+					Some(char) => char,
+					None => return eof(),
+				}
+			},
+		})
 	}
 }
 
