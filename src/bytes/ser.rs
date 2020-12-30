@@ -350,11 +350,12 @@ impl<'a, T: Buffer> serde::Serializer for &'a mut BytesSer<T> {
 	fn serialize_struct_variant(
 		self,
 		_name: &'static str,
-		_variant_index: u32,
-		variant: &'static str,
+		variant_index: u32,
+		_variant: &'static str,
 		_len: usize,
 	) -> Result<Self> {
-		todo!()
+		self.ser_u32(variant_index);
+		Ok(self)
 	}
 }
 
