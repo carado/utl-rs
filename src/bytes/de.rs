@@ -85,5 +85,13 @@ impl<'de, R: Read> Deserializer<'de> for BytesDe<'de, R> {
 			n => Err(Error::InvalidBool(n)),
 		}
 	}
+
+	fn deserialize_u8<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_u8(self.byte()?     )
+	}
+
+	fn deserialize_i8<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		v.visit_i8(self.byte()? as _)
+	}
 }
 
