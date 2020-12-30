@@ -15,3 +15,15 @@ impl<T> ExtendExt<T> for Vec<T> {
 	}
 }
 
+/*
+impl<T: ExtendExt<U>, U> ExtendExt<U> for &'_ mut T {
+	fn extend_copy_slice(&mut self, s: &[T]) where T: Copy {
+		(**self).extend_copy_slice(s);
+	}
+
+	fn extend_trusted_len(&mut self, i: impl TrustedLen<Item = T>) {
+		(**self).extend_trusted_len(i);
+	}
+}
+*/
+

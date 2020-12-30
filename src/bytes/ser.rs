@@ -35,42 +35,76 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 	}
 
 	fn ser_u32(&mut self, v: u32) {
-		let zeros = v.leading_zeros();
-		let bytes_m1 = ((32 + 9 - zeros) / 8).saturating_sub(1) as usize; // 0..=3
-		let masked = zeros & 0b111;
+		if v < 0b1_000000 {
+			self.e1(v as _);
+		} else {
+			let zeros = v.leading_zeros();
+			let bytes_m1 = (((32 + 7 - zeros) / 8) - 1) as usize; // 0..=3
+			let masked = zeros & 0b111;
 
-		let mut xor = bytes_m1 << 6;
+			let mut xor = bytes_m1 << 6;
+			
+			if masked <= 1 {
+				let shift = 1 + (masked ^ 1);
+				self.e1(((0b1_00000 | (xor as u8 >> 3)) << shift) & 0b11_000000);
+				xor = ((xor ^ 0b1_000000) >> 1) << shift;
+			}
 
-		if masked <= 1 {
-			let shift = 1 + (masked ^ 1);
-			self.e1((xor >> shift) as u8 & 0b11_000000);
-			xor = (xor ^ 0b1_000000) << masked;
+			self.ecs(
+				&(v ^ ((xor as u32) << (bytes_m1 * 8))).to_be_bytes()[3 - bytes_m1..]
+			);
 		}
-
-		self.ecs(
-			&(v ^ ((xor as u32) << (bytes_m1 * 8))).to_be_bytes()[3 - bytes_m1..]
-		);
 	}
 
+	/*
 	fn ser_u64(&mut self, v: u64) {
-		/*
-		let [a, b, c, d, e, f, g, h] = v.to_be_bytes();
-		match v.leading_zeros() {
-			 0      => self.ecs(&[0xE0, a, b, c, d, e, f, g, h]),
-			 1      => self.ecs(&[0x60, 0x80 | a, b, c, d, e, f, g, h]),
-			 2      => self.ecs(&[0x20, 0xC0 | a, b, c, d, e, f, g, h]),
-			 3..= 7 => self.ecs(&[0xE0 | a, b, c, d, e, f, g]),
-			 8      => self.ecs(&[0x60, 0xC0 ^ a, b, c, d, e, f, g]),
-			 9      => self.ecs(&[0x20, 0x
+		if v < 0b1_00000 {
+			self.e1(v as _);
+		} else {
+			let zeros = v.leading_zeros();
+			let bytes_m1 = (((64 + 9 - zeros) / 8) - 1) as usize; // 0..=3
+			let masked = zeros & 0b111;
+
+			let mut xor = bytes_m1 << 6;
+
+			if masked <= 2 {
+				let shift = 1 + masked;
+				self.e1((xor >> shift) as u8 & 0b11_000000);
+				xor = (xor ^ 0b1_000000) >> shift;
+			}
+
+			self.ecs(
+				&(v ^ ((xor as u64) << (bytes_m1 * 8))).to_be_bytes()[3 - bytes_m1..]
+			);
 		}
-		*/
 	}
+	*/
 }
 
 #[test]
 fn test() {
-	for i in u16::min_value()..=u16::max_value() {
-		//assert_eq!(
+	for i in 0..=15 {
+		for b in [0, !0].iter().copied() {
+			let n = (((1u16 << i) - 1) & b) | (1u16 << i);
+			let mut v = BytesSer(Vec::<u8>::new());
+			v.ser_u16(n);
+			print!("{:2}: ", i);
+			for b in v.0.into_iter() { print!("{:08b} ", b); }
+			println!();
+		}
+	}
+
+	println!();
+
+	for i in 0..=31 {
+		for b in [0, !0].iter().copied() {
+			let n = (((1u32 << i) - 1) & b) | (1u32 << i);
+			let mut v = BytesSer(Vec::<u8>::new());
+			v.ser_u32(n);
+			print!("{:2}: ", i);
+			for b in v.0.into_iter() { print!("{:08b} ", b); }
+			println!();
+		}
 	}
 }
 
