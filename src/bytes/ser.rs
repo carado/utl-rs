@@ -1,8 +1,5 @@
 use {
-	crate::{
-		extend_ext::ExtendExt,
-		vec_trait::VecTrait,
-	},
+	crate::vec_trait::VecTrait,
 	serde::Serialize,
 };
 
@@ -43,12 +40,12 @@ impl<'a, B, R> BytesSerLen<'a, B, R> where
 	B: VecTrait<u8>,
 	R: VecTrait<Range>,
 {
-	fn new(ser: &'a mut BytesSer<B>, opt_len: Option<usize>) -> Self {
+	fn new(ser: &'a mut BytesSer<B, R>, opt_len: Option<usize>) -> Self {
 		let opt_insert_len = match opt_len {
 			Some(len) => { ser.ser_usize(len); usize::max_value() },
 			None => {
 				let range_i = ser.ranges.len();
-				ser.ranges.push(usize::max_value() .. usize::max_value());
+				ser.ranges.extend_one(usize::max_value() .. usize::max_value());
 				range_i
 			},
 		};
