@@ -448,7 +448,3 @@ impl<T: Buffer> serde::ser::SerializeStructVariant for &'_ mut BytesSer<T> {
 	fn end(self) -> Result { Ok(()) }
 }
 
-
-
-
-
