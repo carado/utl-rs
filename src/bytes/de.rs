@@ -2,7 +2,11 @@ use {
 	serde::{
 		Deserialize,
 		Deserializer,
-		de::Visitor,
+		de::{
+			Visitor,
+			DeserializeSeed,
+			IntoDeserializer,
+		},
 	},
 	std::{
 		io::Read,
@@ -14,7 +18,6 @@ use {
 pub enum Error {
 	InvalidBool(u8),
 	InvalidEnumDiscriminant(u32),
-	MalformedUtf8([u8; 6]),
 	Io(std::io::Error),
 	Custom(String),
 	SizeExceeded(u64),
@@ -31,6 +34,7 @@ impl Display for Error {
 			Self::Io    (e) => write!(f, "{}", e),
 			Self::Custom(e) => write!(f, "{}", e),
 			Self::SizeExceeded(n) => write!(f, "size header {} exceeds max", n),
+			Self::Utf8(e) => write!(f, "UTF-8 decoding error: {}", e),
 		}
 	}
 }
@@ -60,15 +64,9 @@ fn eof<T>() -> Result<T> {
 
 pub type Result<T = ()> = std::result::Result<T, Error>;
 
-pub struct BytesDe<'de, R> {
-	read: &'de mut R,
-	alloc: usize,
-}
+pub struct BytesDe<'de, R> { read: &'de mut R, alloc: usize }
 
-pub struct BytesDeLen<'a, 'de, R> {
-	len: usize,
-	de: &'a mut BytesDe<'de, R>,
-}
+pub struct BytesDeLen<'a, 'de, R> { len: usize, de: &'a mut BytesDe<'de, R> }
 
 const SIZE_HEADER_MAX: u64 = 1 << 24;
 
@@ -276,7 +274,7 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 				let mut bytes = [0u8; 6];
 				bytes[0] = n;
 				let range = 1 .. n.leading_ones() as usize;
-				self.read.read_exact(&mut bytes[range]).map_err(Error::Io)?;
+				self.read.read_exact(&mut bytes[range.clone()]).map_err(Error::Io)?;
 				match
 					std::str::from_utf8(&bytes[range]).map_err(Error::Utf8)?.chars().next()
 				{
@@ -353,6 +351,37 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	) -> Result<V::Value> {
 		v.visit_seq(BytesDeLen { len, de: self })
 	}
+
+	fn deserialize_map<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		let len = self.de_usize()?;
+		v.visit_seq(BytesDeLen { len, de: self })
+	}
+
+	fn deserialize_struct<V: Visitor<'de>>(
+		self, _name: &'static str, fields: &'static [&'static str], v: V,
+	) -> Result<V::Value> {
+		v.visit_seq(BytesDeLen { len: fields.len(), de: self })
+	}
+
+	fn deserialize_enum<V: Visitor<'de>>(
+		self, _name: &'static str, variants: &'static [&'static str], v: V,
+	) -> Result<V::Value> {
+		v.visit_enum(self)
+	}
+
+	fn deserialize_identifier<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		unimplemented!("deserialize_identifier unsupported")
+	}
+
+	fn deserialize_ignored_any<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		unimplemented!("deserialize_ignored_any unsupported")
+	}
+
+	fn deserialize_any<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
+		unimplemented!("deserialize_any unsupported")
+	}
+
+	fn is_human_readable(&self) -> bool { false }
 }
 
 impl<'a, 'de, R> serde::de::SeqAccess<'de> for BytesDeLen<'a, 'de, R> where
@@ -371,15 +400,73 @@ impl<'a, 'de, R> serde::de::SeqAccess<'de> for BytesDeLen<'a, 'de, R> where
 		})
 	}
 
-	fn next_element<T: Deserialize<'de>>(&mut self) -> Result<Option<T>> {
+	fn size_hint(&self) -> Option<usize> { Some(self.len) }
+}
+
+impl<'a, 'de, R> serde::de::MapAccess<'de> for BytesDeLen<'a, 'de, R> where
+	R: Read,
+{
+	type Error = Error;
+
+	fn next_key_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>> where
+		T: serde::de::DeserializeSeed<'de>,
+	{
 		Ok(if self.len == 0 {
 			None
 		} else {
 			self.len -= 1;
-			Some(T::deserialize(&mut *self.de)?)
+			Some(seed.deserialize(&mut *self.de)?)
 		})
 	}
 
+	fn next_value_seed<T>(&mut self, seed: T) -> Result<T::Value> where
+		T: serde::de::DeserializeSeed<'de>,
+	{
+		Ok(seed.deserialize(&mut *self.de)?)
+	}
+
 	fn size_hint(&self) -> Option<usize> { Some(self.len) }
+}
+
+impl<'a, 'de, R> serde::de::EnumAccess<'de> for &'a mut BytesDe<'de, R> where
+	R: Read,
+{
+	type Error = Error;
+	type Variant = Self;
+
+	fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)> where
+		V: DeserializeSeed<'de>,
+	{
+		let idx = self.de_u32()?;
+		Ok((seed.deserialize(idx.into_deserializer())?, self))
+	}
+}
+
+impl<'a, 'de, R> serde::de::VariantAccess<'de> for &'a mut BytesDe<'de, R> where
+	R: Read,
+{
+	type Error = Error;
+
+	fn unit_variant(self) -> Result { Ok(()) }
+
+	fn newtype_variant_seed<V>(self, seed: V) -> Result<V::Value> where
+		V: DeserializeSeed<'de>,
+	{
+		seed.deserialize(self)
+	}
+
+	fn tuple_variant<V>(self, len: usize, seed: V) -> Result<V::Value> where
+		V: Visitor<'de>,
+	{
+		self.deserialize_tuple(len, seed)
+	}
+
+	fn struct_variant<V>(self, fields: &'static [&'static str], seed: V) ->
+		Result<V::Value>
+	where
+		V: Visitor<'de>,
+	{
+		self.deserialize_tuple(fields.len(), seed)
+	}
 }
 
