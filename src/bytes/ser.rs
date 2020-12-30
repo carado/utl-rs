@@ -67,9 +67,6 @@ impl<B, R> BytesSer<B, R> where
 	B: VecTrait<u8>,
 	R: VecTrait<Range>,
 {
-	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
-	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
-
 	pub fn len(&self) -> usize { self.buffer.len() }
 
 	pub fn slices(&self) -> impl std::iter::TrustedLen<Item = &'_ [u8]> {
@@ -90,7 +87,7 @@ impl<B, R> BytesSer<B, R> where
 		self.last_start = 0;
 	}
 
-	pub fn new() -> Self { Self::default() }
+	pub fn new() -> Self where B: Default, R: Default { Self::default() }
 
 	pub fn reuse_vecs(mut buffer: B, mut ranges: R) -> Self {
 		buffer.clear();
@@ -98,7 +95,11 @@ impl<B, R> BytesSer<B, R> where
 		Self { last_start: 0, buffer, ranges }
 	}
 
-	pub fn ser_usize(&mut self, mut v: usize) {
+	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
+
+	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
+
+	fn ser_usize(&mut self, mut v: usize) {
 		loop {
 			let more = v > 0x80;
 			self.e1((v as u8 & 0x7F) | ((more as u8) << 7));
