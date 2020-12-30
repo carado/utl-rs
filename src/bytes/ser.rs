@@ -119,8 +119,8 @@ fn test() {
 		let [mut t0, mut t1]: [BytesSer<Vec<u8>>; 2] = [<_>::default(), <_>::default()];
 		g( 0, &mut t0);
 		g(!0, &mut t1);
-		assert_eq!(t0.0.len(), t1.0.len());
-		for (b0, b1) in t0.0.iter().zip(t1.0.iter()) {
+		assert_eq!(t0.len(), t1.len());
+		for (b0, b1) in t0.bytes().zip(t1.bytes()) {
 			for bit in (0..8).rev() {
 				print!("{}", match ((b0 >> bit) & 1, (b1 >> bit) & 1) {
 					(0, 0) => '0',
