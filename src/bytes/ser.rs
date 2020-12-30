@@ -90,6 +90,14 @@ impl<B, R> BytesSer<B, R> where
 		self.last_start = 0;
 	}
 
+	pub fn new() -> Self { Self::default() }
+
+	pub fn reuse_vecs(mut buffer: B, mut ranges: R) -> Self {
+		buffer.clear();
+		ranges.clear();
+		Self { last_start: 0, buffer, ranges }
+	}
+
 	pub fn ser_usize(&mut self, mut v: usize) {
 		loop {
 			let more = v > 0x80;
