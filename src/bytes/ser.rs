@@ -27,6 +27,16 @@ impl<T: Buffer> BytesSer<T> {
 	fn ecs(&mut self, s: &[u8]) { self.buffer.extend_copy_slice(s); }
 	fn e1(&mut self, b: u8) { self.buffer.extend_one(b); }
 
+	pub fn len(&self) -> usize { self.buffer.len() }
+
+	pub fn slices(&self) -> impl std::iter::TrustedLen<Item = &'_ [u8]> {
+		self.ranges.iter().map(move |range| &self.buffer[range.clone()])
+	}
+
+	pub fn bytes(&self) -> impl '_ + Iterator<Item = u8> {
+		self.slices().flat_map(|slice| slice.iter().copied())
+	}
+
 	fn ser_u16(&mut self, v: u16) {
 		match v.leading_zeros() {
 			0     => self.ecs(&[0x80, (v >> 8) as u8, v as u8]),
