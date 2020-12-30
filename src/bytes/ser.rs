@@ -45,7 +45,7 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 			let mut xor = bytes_m1 << 6;
 			
 			if masked <= 1 {
-				let shift = 1 + (masked ^ 1);
+				let shift = 2 - masked;
 				self.e1(((0b1_00000 | (xor as u8 >> 3)) << shift) & 0b11_000000);
 				xor = ((xor ^ 0b1_000000) >> 1) << shift;
 			}
@@ -64,11 +64,11 @@ impl<T: ExtendExt<u8>> BytesSer<T> {
 			let bytes_m1 = (((64 + 7 - zeros) / 8) - 1) as usize; // 0..=7
 			let masked = zeros & 0b111;
 
-			let mut xor = bytes_m1 << 6;
+			let mut xor = bytes_m1 << 5;
 			
 			if masked <= 2 {
-				let shift = 1 + (masked ^ 1);
-				self.e1(((0b1_00000 | (xor as u8 >> 3)) << shift) & 0b111_00000);
+				let shift = 3 - masked;
+				self.e1(((0b1_0000 | (xor as u8 >> 4)) << shift) & 0b111_00000);
 				xor = ((xor ^ 0b1_00000) >> 1) << shift;
 			}
 
