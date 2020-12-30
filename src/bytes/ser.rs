@@ -310,8 +310,7 @@ impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
 	}
 	
 	fn serialize_char(self, v: char) -> Result {
-		let mut bytes = [0u8; 6];
-		self.ecs(v.encode_utf8(&mut bytes).as_bytes());
+		self.ecs(v.encode_utf8(&mut [0u8; 6]).as_bytes());
 		Ok(())
 	}
 
