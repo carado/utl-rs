@@ -111,7 +111,7 @@ impl<B, R> BytesSer<B, R> where
 
 	fn ser_usize(&mut self, mut v: usize) {
 		loop {
-			let more = v > 0x80;
+			let more = v >= 0x80;
 			self.e1((v as u8 & 0x7F) | ((more as u8) << 7));
 			if !more { break; }
 			v -= 0x80;

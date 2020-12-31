@@ -61,6 +61,10 @@ fn test() {
 		ck(vec![rand_u16(), rand_u16(), rand_u16()]);
 		ck(vec![rand_u16(), rand_u16(), rand_u16(), rand_u16()]);
 		ck(rng.gen::<char>());
+		ck(Ok ::<u16, u16>(rand_u16()));
+		ck(Err::<u16, u16>(rand_u16()));
+		ck(None::<u16>);
+		ck(Some(rand_u16()));
 		ck((0..)
 			.take(rng.gen_range(0..64))
 			.map(|_| thread_rng().gen::<char>())
