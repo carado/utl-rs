@@ -25,29 +25,47 @@ fn test() {
 		eprintln!("");
 	}
 
+	fn rand_u16() -> u16 {
+		let mut rng = rand::thread_rng();
+		(rng.gen::<u16>() | (1 << 15)) >> rng.gen_range(0..16)
+	}
+
 	use rand::prelude::*;
 
 	let mut rng = rand::thread_rng();
 
 	for i in 0..128 {
-		//for _ in 0..256 {
+		for _ in 0..16 {
 			let n = (rng.gen::<u128>() | (1 << 127)) >> (127 - i);
-			if n < u16::max_value() as u128 { ck(n as u16); }
-			if n < u32::max_value() as u128 { ck(n as u32); }
-			if n < u64::max_value() as u128 { ck(n as u64); }
-		//}
+			if n <=    u16 ::max_value() as u128           { ck(  n as u16  ); }
+			if n <=    u32 ::max_value() as u128           { ck(  n as u32  ); }
+			if n <=    u64 ::max_value() as u128           { ck(  n as u64  ); }
+			if n <=    u128::max_value() as u128           { ck(  n as u128 ); }
+			if n <  (-(i16 ::min_value() as i128)) as u128 { ck(-(n as i16 )); }
+			if n <  (-(i32 ::min_value() as i128)) as u128 { ck(-(n as i32 )); }
+			if n <  (-(i64 ::min_value() as i128)) as u128 { ck(-(n as i64 )); }
+			if n <=    i128::max_value() as u128           { ck(-(n as i128)); }
+		}
 	}
 
-	//for i in u8  ::min_value() ..= u8  ::max_value() { ck(i); }
-	//for i in i8  ::min_value() ..= i8  ::max_value() { ck(i); }
-	//for i in u16 ::min_value() ..= u16 ::max_value() { ck(i); }
-	//for i in i16 ::min_value() ..= i16 ::max_value() { ck(i); }
-
-	//for i in u32 ::min_value() ..= u32 ::max_value() { ck(i); }
-	//for i in i32 ::min_value() ..= i32 ::max_value() { ck(i); }
-	//for i in u64 ::min_value() ..= u64 ::max_value() { ck(i); }
-	//for i in i64 ::min_value() ..= i64 ::max_value() { ck(i); }
-	//for i in u128::min_value() ..= u128::max_value() { ck(i); }
-	//for i in i128::min_value() ..= i128::max_value() { ck(i); }
+	for _ in 0..1 << 12 {
+		ck(rng.gen::<u8>());
+		ck(rng.gen::<i8>());
+		ck(((),));
+		ck((rand_u16(),));
+		ck((rand_u16(), rand_u16()));
+		ck((rand_u16(), rand_u16(), rand_u16()));
+		ck((rand_u16(), rand_u16(), rand_u16(), rand_u16()));
+		ck(vec![rand_u16()]);
+		ck(vec![rand_u16(), rand_u16()]);
+		ck(vec![rand_u16(), rand_u16(), rand_u16()]);
+		ck(vec![rand_u16(), rand_u16(), rand_u16(), rand_u16()]);
+		ck(rng.gen::<char>());
+		ck((0..)
+			.take(rng.gen_range(0..64))
+			.map(|_| thread_rng().gen::<char>())
+			.collect::<String>()
+		);
+	}
 }
 

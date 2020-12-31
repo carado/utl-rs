@@ -162,12 +162,11 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			let not_shift = head >> 7;
 			let extra = ((head | (next >> 2)) >> (4 + not_shift)) & 0b11;
 			let mut bytes = [0u8; 4];
-			dbg!((), extra);
 			self.rex(&mut bytes[4 - extra as usize ..])?;
 			Ok(
 				u32::from_be_bytes(bytes)
 				| (
-					(((next & !(not_shift << 7)) | (0b1_000000 << not_shift)) as u32)
+					(((next & !(extra << (not_shift + 6))) | (0b1_000000 << not_shift)) as u32)
 					<< (extra * 8)
 				)
 			)
@@ -189,9 +188,7 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			let shift = head.leading_zeros();
 			let extra = ((head | (next >> 3)) >> (4 - shift)) & 0b111;
 			let mut bytes = [0u8; 8];
-			if extra != 0 {
-				self.rex(&mut bytes[8 - extra as usize ..])?;
-			}
+			self.rex(&mut bytes[8 - extra as usize ..])?;
 			Ok(
 				u64::from_be_bytes(bytes)
 				| (
@@ -215,9 +212,7 @@ impl<'de, R: Read> BytesDe<'de, R> {
 			let shift = head.leading_zeros();
 			let extra = ((head | (next >> 4)) >> (3 - shift)) & 0b1111;
 			let mut bytes = [0u8; 16];
-			if extra != 0 {
-				self.rex(&mut bytes[16 - extra as usize ..])?;
-			}
+			self.rex(&mut bytes[16 - extra as usize ..])?;
 			Ok(
 				u128::from_be_bytes(bytes)
 				| (
@@ -310,10 +305,10 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 			n => {
 				let mut bytes = [0u8; 6];
 				bytes[0] = n;
-				let range = 1 .. n.leading_ones() as usize;
-				self.rex(&mut bytes[range.clone()])?;
-				match
-					std::str::from_utf8(&bytes[range]).map_err(Error::Utf8)?.chars().next()
+				let len = n.leading_ones() as usize;
+				self.rex(&mut bytes[1 .. len])?;
+				match std::str::from_utf8(&bytes[.. len])
+					.map_err(Error::Utf8)?.chars().next()
 				{
 					Some(char) => char,
 					None => return eof(),
@@ -323,7 +318,9 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 	}
 
 	fn deserialize_str<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
-		v.visit_str(std::str::from_utf8(&self.de_usize_buf()?).map_err(Error::Utf8)?)
+		v.visit_str(
+			std::str::from_utf8(&self.de_usize_buf()?).map_err(Error::Utf8)?
+		)
 	}
 
 	fn deserialize_string<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
