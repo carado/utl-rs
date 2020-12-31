@@ -89,6 +89,11 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		}
 	}
 
+	fn rex(&mut self, to: &mut [u8]) -> Result {
+		if !to.is_empty() { self.read.read_exact(to).map_err(Error::Io)?; }
+		Ok(())
+	}
+
 	fn consume_alloc(&mut self, n: usize) -> Result {
 		if n > self.alloc {
 			Err(Error::AllocExceeded)
@@ -136,7 +141,7 @@ impl<'de, R: Read> BytesDe<'de, R> {
 
 	fn de_usize_buf(&mut self) -> Result<Vec<u8>> {
 		let mut buf = vec![0u8; self.de_usize_alloc()?];
-		self.read.read_exact(&mut buf).map_err(Error::Io)?;
+		self.rex(&mut buf)?;
 		Ok(buf)
 	}
 
@@ -155,9 +160,10 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		} else if head & 0b111111 == 0 {
 			let next = self.byte()?;
 			let not_shift = head >> 7;
-			let extra = (head | (next >> 2)) >> (4 + not_shift);
+			let extra = ((head | (next >> 2)) >> (4 + not_shift)) & 0b11;
 			let mut bytes = [0u8; 4];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			dbg!((), extra);
+			self.rex(&mut bytes[4 - extra as usize ..])?;
 			Ok(
 				u32::from_be_bytes(bytes)
 				| (
@@ -168,7 +174,8 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		} else {
 			let extra = head >> 6;
 			let mut bytes = [0u8; 4];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			dbg!(extra);
+			self.rex(&mut bytes[4 - extra as usize ..])?;
 			Ok(u32::from_be_bytes(bytes) | ((head as u32 & 0b111111) << (extra * 8)))
 		}
 	}
@@ -180,19 +187,21 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		} else if head & 0b11111 == 0 {
 			let next = self.byte()?;
 			let shift = head.leading_zeros();
-			let extra = (head | (next >> 3)) >> (4 - shift);
+			let extra = ((head | (next >> 3)) >> (4 - shift)) & 0b111;
 			let mut bytes = [0u8; 8];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			if extra != 0 {
+				self.rex(&mut bytes[8 - extra as usize ..])?;
+			}
 			Ok(
 				u64::from_be_bytes(bytes)
 				| (
-					(((next & (0x8F >> shift)) | (0x80 >> shift)) as u64) << (extra * 8)
+					(((next & (0x7F >> shift)) | (0x80 >> shift)) as u64) << (extra * 8)
 				)
 			)
 		} else {
 			let extra = head >> 5;
 			let mut bytes = [0u8; 8];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			self.rex(&mut bytes[8 - extra as usize ..])?;
 			Ok(u64::from_be_bytes(bytes) | ((head as u64 & 0b11111) << (extra * 8)))
 		}
 	}
@@ -204,19 +213,21 @@ impl<'de, R: Read> BytesDe<'de, R> {
 		} else if head & 0b1111 == 0 {
 			let next = self.byte()?;
 			let shift = head.leading_zeros();
-			let extra = (head | (next >> 4)) >> (3 - shift);
+			let extra = ((head | (next >> 4)) >> (3 - shift)) & 0b1111;
 			let mut bytes = [0u8; 16];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			if extra != 0 {
+				self.rex(&mut bytes[16 - extra as usize ..])?;
+			}
 			Ok(
 				u128::from_be_bytes(bytes)
 				| (
-					(((next & (0x8F >> shift)) | (0x80 >> shift)) as u128) << (extra * 8)
+					(((next & (0x7F >> shift)) | (0x80 >> shift)) as u128) << (extra * 8)
 				)
 			)
 		} else {
 			let extra = head >> 4;
 			let mut bytes = [0u8; 16];
-			self.read.read_exact(&mut bytes[extra as usize ..]).map_err(Error::Io)?;
+			self.rex(&mut bytes[16 - extra as usize ..])?;
 			Ok(u128::from_be_bytes(bytes) | ((head as u128 & 0b1111) << (extra * 8)))
 		}
 	}
@@ -283,13 +294,13 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 
 	fn deserialize_f32<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		let mut bytes = [0u8; 4];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		self.rex(&mut bytes)?;
 		v.visit_f32(f32::from_bits(u32::from_le_bytes(bytes)))
 	}
 
 	fn deserialize_f64<V: Visitor<'de>>(self, v: V) -> Result<V::Value> {
 		let mut bytes = [0u8; 8];
-		self.read.read_exact(&mut bytes).map_err(Error::Io)?;
+		self.rex(&mut bytes)?;
 		v.visit_f64(f64::from_bits(u64::from_le_bytes(bytes)))
 	}
 
@@ -300,7 +311,7 @@ impl<'a, 'de, R: Read> Deserializer<'de> for &'a mut BytesDe<'de, R> {
 				let mut bytes = [0u8; 6];
 				bytes[0] = n;
 				let range = 1 .. n.leading_ones() as usize;
-				self.read.read_exact(&mut bytes[range.clone()]).map_err(Error::Io)?;
+				self.rex(&mut bytes[range.clone()])?;
 				match
 					std::str::from_utf8(&bytes[range]).map_err(Error::Utf8)?.chars().next()
 				{

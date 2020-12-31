@@ -25,12 +25,17 @@ fn test() {
 		eprintln!("");
 	}
 
+	use rand::prelude::*;
+
 	let mut rng = rand::thread_rng();
 
 	for i in 0..128 {
-		let n = (rng.gen::<u128>() & ((1 << i) - 1)) | ((1 << i) >> 1);
-
-		if n < u16::max_value() as u128 { ck(i); }
+		//for _ in 0..256 {
+			let n = (rng.gen::<u128>() | (1 << 127)) >> (127 - i);
+			if n < u16::max_value() as u128 { ck(n as u16); }
+			if n < u32::max_value() as u128 { ck(n as u32); }
+			if n < u64::max_value() as u128 { ck(n as u64); }
+		//}
 	}
 
 	//for i in u8  ::min_value() ..= u8  ::max_value() { ck(i); }
