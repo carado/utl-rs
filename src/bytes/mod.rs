@@ -1,6 +1,8 @@
 mod ser;
 mod de;
 
+//TODO switch to little-endian
+
 pub use self::{
 	ser::BytesSer,
 	de::{BytesDe, Error},
