@@ -71,5 +71,7 @@ pub use crate::{
 	vec_trait::*,
 };
 
+pub use ::servo_arc::Arc as SArc;
+
 pub use parking_lot;
 
