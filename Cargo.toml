@@ -9,9 +9,9 @@ num-traits = "0.2.14"
 derive_more = "0.99.11"
 rustc-hash = "1.1.0"
 fnv = "1.0.7"
-half = "1.6.0"
+half = "1.7.1"
 parking_lot = "0.11.1"
-serde = { version = "1.0.118", optional = true }
-rand = "0.8.1"
+serde = { version = "1.0.119", optional = true }
+rand = "0.8.2"
 servo_arc = "0.1.1"
 

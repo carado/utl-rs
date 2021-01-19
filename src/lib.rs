@@ -47,6 +47,7 @@ pub mod unsafe_cell;
 pub mod generator_state_ext;
 pub mod vec_trait;
 #[cfg(feature = "serde")] pub mod bytes;
+#[cfg(feature = "serde")] pub mod ser_iter;
 
 pub use crate::{
 	cvec::CVec,

@@ -7,6 +7,10 @@ use {
 #[allow(unreachable_code)]
 pub struct Infallible(!);
 
+impl From<Infallible> for ! {
+	fn from(Infallible(never): Infallible) -> ! { never }
+}
+
 impl std::error::Error for Infallible {}
 
 impl serde::ser::Error for Infallible {
