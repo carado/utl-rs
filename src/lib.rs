@@ -36,8 +36,8 @@ pub mod maps;
 pub mod range_ext;
 pub mod thin;
 pub mod unreach;
-pub mod alloc_vec;
-pub mod dedup_vec;
+//pub mod alloc_vec;
+//pub mod dedup_vec;
 pub mod derefs;
 pub mod coffer;
 pub mod by_ptr;
@@ -57,7 +57,7 @@ pub use crate::{
 	by_bits::*,
 	weak_key::*,
 	by_key::*,
-	bits_ext::*,
+	bits_ext::BitsExt,
 	on_drop::*,
 	rev_ord::*,
 	range_ext::*,
@@ -75,4 +75,6 @@ pub use crate::{
 pub use ::servo_arc::Arc as SArc;
 
 pub use parking_lot;
+
+pub use num_traits;
 

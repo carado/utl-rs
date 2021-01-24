@@ -60,3 +60,23 @@ impl<K, V> DerefMut for ByKey<K, V> {
 	fn deref_mut(&mut self) -> &mut V { &mut self.value }
 }
 
+#[cfg(feature = "serde")]
+impl<K: serde::Serialize, V> serde::Serialize for ByKey<K, V> {
+	fn serialize<S: serde::Serializer>(&self, ser: S) -> Result<S::Ok, S::Error> {
+		self.key.serialize(ser)
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V> serde::Deserialize<'de> for ByKey<K, V> where
+	K: serde::Deserialize<'de>,
+	V: Default,
+{
+	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
+		Ok(Self {
+			key: serde::Deserialize::deserialize(de)?,
+			value: <_>::default(),
+		})
+	}
+}
+

@@ -1,7 +1,5 @@
 use {std::{ops::*, mem::size_of}, num_traits::*};
 
-pub use num_traits;
-
 pub trait BitsExtReqs =
 	PrimInt +
 	Shl<u32, Output = Self> + ShlAssign<u32> +

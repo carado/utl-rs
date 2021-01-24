@@ -11,7 +11,7 @@ rustc-hash = "1.1.0"
 fnv = "1.0.7"
 half = "1.7.1"
 parking_lot = "0.11.1"
-serde = { version = "1.0.119", optional = true }
+serde = { version = "1.0.120", optional = true }
 rand = "0.8.2"
 servo_arc = "0.1.1"
 
