@@ -167,6 +167,23 @@ impl<T> CVec<T> {
 	pub fn clear(&mut self) {
 		*self = Self::new();
 	}
+
+	unsafe fn extend_copy_unsafe(&mut self, data: &[T]) {
+		let pos = self.len;
+
+		self.grow_len(self.len + data.len());
+
+		ptr::copy_nonoverlapping(
+			data.as_ptr(),
+			self.data.as_ptr().add(pos),
+			data.len(),
+		);
+	}
+
+	pub fn clear_forget(&mut self) {
+		unsafe { self.dealloc(); }
+		forget(replace(self, Self::new()));
+	}
 }
 
 impl<T> Extend<T> for CVec<T> {
@@ -215,16 +232,24 @@ impl<T> ExtendExt<T> for CVec<T> {
 	}
 
 	fn extend_copy_slice(&mut self, data: &[T]) where T: Copy {
+		unsafe { self.extend_copy_unsafe(data); }
+	}
+
+	fn extend_append_self(&mut self, rhs: &mut Self) {
+		if self.is_empty() {
+			std::mem::swap(self, rhs);
+		} else {
+			unsafe {
+				self.extend_copy_unsafe(&**rhs);
+				rhs.clear_forget();
+			}
+		}
+	}
+
+	fn extend_append_vec(&mut self, rhs: &mut Vec<T>) {
 		unsafe {
-			let pos = self.len;
-
-			self.grow_len(self.len + data.len());
-
-			ptr::copy_nonoverlapping(
-				data.as_ptr(),
-				self.data.as_ptr().add(pos),
-				data.len(),
-			);
+			self.extend_copy_unsafe(&**rhs);
+			rhs.set_len(0);
 		}
 	}
 }
@@ -253,7 +278,7 @@ impl<T> Drop for IntoIter<T> {
 	fn drop(&mut self) {
 		while let Some(_) = self.next() {}
 		unsafe { self.vec.dealloc(); }
-		forget(replace(&mut self.vec, CVec::new()));
+		self.vec.clear_forget();
 	}
 }
 
