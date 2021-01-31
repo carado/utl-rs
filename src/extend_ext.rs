@@ -5,6 +5,7 @@ pub trait ExtendExt<T>: Extend<T> {
 	fn extend_trusted_len(&mut self, i: impl TrustedLen<Item = T>);
 	fn extend_append_self(&mut self, rhs: &mut Self);
 	fn extend_append_vec(&mut self, rhs: &mut Vec<T>);
+	fn extend_append_cvec(&mut self, rhs: &mut crate::cvec::CVec<T>);
 }
 
 impl<T> ExtendExt<T> for Vec<T> {
@@ -19,6 +20,11 @@ impl<T> ExtendExt<T> for Vec<T> {
 	fn extend_append_self(&mut self, rhs: &mut Self) { self.append(rhs); }
 
 	fn extend_append_vec(&mut self, rhs: &mut Vec<T>) { self.append(rhs); }
+
+	fn extend_append_cvec(&mut self, rhs: &mut crate::cvec::CVec<T>) {
+		//TODO optimize this by copying memory
+		self.extend_trusted_len(rhs.drain(..));
+	}
 }
 
 /*

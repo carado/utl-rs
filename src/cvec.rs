@@ -236,6 +236,10 @@ impl<T> ExtendExt<T> for CVec<T> {
 	}
 
 	fn extend_append_self(&mut self, rhs: &mut Self) {
+		self.extend_append_cvec(rhs);
+	}
+
+	fn extend_append_cvec(&mut self, rhs: &mut CVec<T>) {
 		if self.is_empty() {
 			std::mem::swap(self, rhs);
 		} else {
