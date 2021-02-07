@@ -281,7 +281,6 @@ pub struct IntoIter<T> { vec: CVec<T>, pos: usize }
 impl<T> Drop for IntoIter<T> {
 	fn drop(&mut self) {
 		while let Some(_) = self.next() {}
-		unsafe { self.vec.dealloc(); }
 		self.vec.clear_forget();
 	}
 }
