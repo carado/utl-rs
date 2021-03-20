@@ -1,6 +1,6 @@
 ### carado's utl-rs
 
-Various (not very tested and entirely undocumented) utilities for Rust.
+Various (not very tested and barely documented) utilities for Rust.
 
 `use ::utl::*` re-exports useful traits, types, and modules to the global scope.
 
