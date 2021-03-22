@@ -21,6 +21,8 @@ pub trait EntryExt: Sized {
 	fn occupied_value(occupied: &Self::OccupiedEntry) -> &Self::Value;
 	fn occupied_value_mut(occupied: &mut Self::OccupiedEntry) -> &mut Self::Value;
 	fn occupied_remove(occupied: Self::OccupiedEntry) -> (Self::Key, Self::Value);
+	fn occupied_key(occupied: &Self::OccupiedEntry) -> &Self::Key;
+
 }
 
 pub trait EntryExtOr<Insert>: EntryExt {
@@ -30,6 +32,10 @@ pub trait EntryExtOr<Insert>: EntryExt {
 
 	fn vacant_insert_into(vacant: Self::VacantEntry, insert: Insert) ->
 		(Self::Key, Self::Value);
+
+	fn vacant_key<'a>(
+		vacant: &'a Self::VacantEntry, insert: &'a Insert,
+	) -> &'a Self::Key;
 
 	#[inline]
 	fn or(self, make_insert: impl FnOnce() -> Insert) -> EntryOr<Insert, Self> {
@@ -100,6 +106,13 @@ impl<I, E: EntryExtOr<I>> EntryOr<I, E> {
 			self_.keep(keep);
 		})
 	}
+
+	pub fn key(&self) -> &E::Key {
+		match self {
+			Self::Occupied(occupied) => E::occupied_key(occupied),
+			Self::Vacant(vacant, insert) => E::vacant_key(vacant, insert),
+		}
+	}
 }
 
 macro_rules! impl_pair{
@@ -146,7 +159,12 @@ macro_rules! impl_all_pairs{
 		fn occupied_remove(entry: Self::OccupiedEntry) -> (Self::Key, Self::Value) {
 			entry.remove_entry()
 		}
-	}
+
+		#[inline]
+		fn occupied_key(entry: &Self::OccupiedEntry) -> &Self::Key {
+			entry.key()
+		}
+	};
 }
 
 mod hash_map {
@@ -176,6 +194,13 @@ mod hash_map {
 			(Self::Key, Self::Value)
 		{
 			(vacant.into_key(), insert)
+		}
+
+		#[inline]
+		fn vacant_key<'k>(
+			vacant: &'k Self::VacantEntry, _insert: &'k V,
+		) -> &'k Self::Key {
+			vacant.key()
 		}
 	}
 
@@ -208,6 +233,13 @@ mod hash_map {
 		{
 			insert
 		}
+
+		#[inline]
+		fn vacant_key<'k>(
+			_vacant: &'k Self::VacantEntry, (key, _): &'k (K, V),
+		) -> &'k Self::Key {
+			key
+		}
 	}
 
 	impl<'a, K, V, S> EntryExtOr<(u64, K, V)> for RawEntryMut<'a, K, V, S> where
@@ -231,6 +263,13 @@ mod hash_map {
 			(Self::Key, Self::Value)
 		{
 			(k, v)
+		}
+
+		#[inline]
+		fn vacant_key<'k>(
+			_vacant: &'k Self::VacantEntry, (_, key, _): &'k (u64, K, V),
+		) -> &'k Self::Key {
+			key
 		}
 	}
 }
@@ -262,6 +301,13 @@ mod btree_map {
 			(Self::Key, Self::Value)
 		{
 			(vacant.into_key(), insert)
+		}
+
+		#[inline]
+		fn vacant_key<'k>(
+			vacant: &'k Self::VacantEntry, _insert: &'k V,
+		) -> &'k Self::Key {
+			vacant.key()
 		}
 	}
 }
