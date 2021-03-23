@@ -106,10 +106,18 @@ impl<I, E: EntryExtOr<I>> EntryOr<I, E> {
 		})
 	}
 
-	pub fn keep_non_default(self) -> impl std::ops::DerefMut<Target = Self> where
+	pub fn keep_not_eq_default(self) -> impl std::ops::DerefMut<Target = Self>
+	where
 		E::Value: PartialEq + Default,
 	{
 		self.keep_if(|v| *v != E::Value::default())
+	}
+
+	pub fn keep_non_default(self) -> impl std::ops::DerefMut<Target = Self>
+	where
+		E::Value: crate::is_default::IsDefault,
+	{
+		self.keep_if(|v| !crate::is_default::IsDefault::is_default(v))
 	}
 
 	pub fn key(&self) -> &E::Key {

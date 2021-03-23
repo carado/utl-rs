@@ -33,6 +33,11 @@ basic_is_default!{
 		i8,i16,i32,i64,i128,
 		f32,f64,
 	} => *self == Self::default();
+	{
+		&'a T['a, T: IsDefault], &'a mut T['a, T: IsDefault],
+		Box<T>[T: IsDefault],
+		std::sync::Arc<T>[T: IsDefault], std::rc::Rc<T>[T: IsDefault],
+	} => (**self).is_default();
 	{ Option<T>[T] } => self.is_none();
 	{
 		std::collections::HashMap<K, V>[K, V],
