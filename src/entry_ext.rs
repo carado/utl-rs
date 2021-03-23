@@ -22,7 +22,6 @@ pub trait EntryExt: Sized {
 	fn occupied_value_mut(occupied: &mut Self::OccupiedEntry) -> &mut Self::Value;
 	fn occupied_remove(occupied: Self::OccupiedEntry) -> (Self::Key, Self::Value);
 	fn occupied_key(occupied: &Self::OccupiedEntry) -> &Self::Key;
-
 }
 
 pub trait EntryExtOr<Insert>: EntryExt {
@@ -105,6 +104,12 @@ impl<I, E: EntryExtOr<I>> EntryOr<I, E> {
 			let keep = whether(&mut *self_);
 			self_.keep(keep);
 		})
+	}
+
+	pub fn keep_non_default(self) -> impl std::ops::DerefMut<Target = Self> where
+		E::Value: PartialEq + Default,
+	{
+		self.keep_if(|v| *v != E::Value::default())
 	}
 
 	pub fn key(&self) -> &E::Key {

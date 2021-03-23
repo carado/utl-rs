@@ -46,6 +46,7 @@ pub mod extend_ext;
 pub mod unsafe_cell;
 pub mod generator_state_ext;
 pub mod vec_trait;
+pub mod is_default;
 #[cfg(feature = "serde")] pub mod bytes;
 #[cfg(feature = "serde")] pub mod ser_iter;
 
@@ -70,6 +71,7 @@ pub use crate::{
 	unsafe_cell::{UnsafeCell, UnsafeCellRef, UnsafeCellMut},
 	generator_state_ext::*,
 	vec_trait::*,
+	is_default::IsDefault,
 };
 
 pub use ::servo_arc::Arc as SArc;
