@@ -45,3 +45,11 @@ impl<I: num_traits::Bounded + Eq + Copy> Into<Option<I>> for NonMax<I> {
 	}
 }
 
+impl<I> std::fmt::Debug for NonMax<I> where
+	I: num_traits::Bounded + Eq + std::fmt::Debug + Copy,
+{
+	fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+		self.get().fmt(fmt)
+	}
+}
+
