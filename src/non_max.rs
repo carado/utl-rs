@@ -24,6 +24,11 @@ impl<I: num_traits::Bounded + Eq + Copy> NonMax<I> {
 	pub fn get(&self) -> Option<I> { (*self).into() }
 
 	pub fn raw(&self) -> I { self.0 }
+
+	pub fn unwrap(self) -> I {
+		debug_assert!(self.is_some());
+		self.0
+	}
 }
 
 impl<I: num_traits::Bounded + Eq + Copy> Default for NonMax<I> {

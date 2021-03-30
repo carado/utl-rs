@@ -2,6 +2,12 @@ pub mod nop;
 
 pub use self::nop::Map as Nop;
 
+pub use ::std::collections::hash_map::{
+	Entry,
+	OccupiedEntry as Occupied,
+	VacantEntry as Vacant,
+};
+
 pub mod sht {
 	pub use fnv::{
 		FnvHasher as Hasher,
