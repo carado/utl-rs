@@ -45,7 +45,7 @@ pub mod non_max;
 pub mod extend_ext;
 pub mod unsafe_cell;
 pub mod generator_state_ext;
-pub mod vec_trait;
+pub mod vec_ext;
 pub mod is_default;
 pub mod option_ext;
 #[cfg(feature = "serde")] pub mod bytes;
@@ -71,7 +71,6 @@ pub use crate::{
 	extend_ext::*,
 	unsafe_cell::{UnsafeCell, UnsafeCellRef, UnsafeCellMut},
 	generator_state_ext::*,
-	vec_trait::*,
 	is_default::IsDefault,
 	option_ext::OptionExt,
 };

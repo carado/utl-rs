@@ -16,6 +16,8 @@ pub unsafe fn unsafe_unreachable() -> ! { unreachable!() }
 #[inline(always)]
 pub unsafe fn unsafe_unreachable() -> ! { std::hint::unreachable_unchecked() }
 
+pub use self::unsafe_unreachable as unreachable_unchecked;
+
 pub trait UnsafeUnwrap {
 	type Value;
 	type Alt;

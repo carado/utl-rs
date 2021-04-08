@@ -1,5 +1,5 @@
 use {
-	crate::vec_trait::VecTrait,
+	crate::vec_ext::VecExt,
 	serde::Serialize,
 };
 
@@ -41,8 +41,8 @@ pub struct BytesSerLen<'a, B, R> {
 }
 
 impl<'a, B, R> BytesSerLen<'a, B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	fn new(ser: &'a mut BytesSer<B, R>, opt_len: Option<usize>) -> Self {
 		let opt_insert_len = match opt_len {
@@ -68,8 +68,8 @@ impl<'a, B, R> BytesSerLen<'a, B, R> where
 }
 
 impl<B, R> BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	pub fn len(&self) -> usize { self.buffer.len() }
 
@@ -272,8 +272,8 @@ fn unsign<T, U>(v: T) -> U where
 }
 
 impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -418,8 +418,8 @@ impl<'a, B, R> serde::Serializer for &'a mut BytesSer<B, R> where
 }
 
 impl<'a, B, R> serde::ser::SerializeSeq for BytesSerLen<'a, B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -434,8 +434,8 @@ impl<'a, B, R> serde::ser::SerializeSeq for BytesSerLen<'a, B, R> where
 
 
 impl<B, R> serde::ser::SerializeTuple for &'_ mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -448,8 +448,8 @@ impl<B, R> serde::ser::SerializeTuple for &'_ mut BytesSer<B, R> where
 }
 
 impl<B, R> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -462,8 +462,8 @@ impl<B, R> serde::ser::SerializeTupleStruct for &'_ mut BytesSer<B, R> where
 }
 
 impl<B, R> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -476,8 +476,8 @@ impl<B, R> serde::ser::SerializeTupleVariant for &'_ mut BytesSer<B, R> where
 }
 
 impl<'a, B, R> serde::ser::SerializeMap for BytesSerLen<'a, B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -495,8 +495,8 @@ impl<'a, B, R> serde::ser::SerializeMap for BytesSerLen<'a, B, R> where
 }
 
 impl<B, R> serde::ser::SerializeStruct for &'_ mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
@@ -511,8 +511,8 @@ impl<B, R> serde::ser::SerializeStruct for &'_ mut BytesSer<B, R> where
 }
 
 impl<B, R> serde::ser::SerializeStructVariant for &'_ mut BytesSer<B, R> where
-	B: VecTrait<u8>,
-	R: VecTrait<Range>,
+	B: VecExt<u8>,
+	R: VecExt<Range>,
 {
 	type Ok = ();
 	type Error = Infallible;
