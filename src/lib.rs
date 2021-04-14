@@ -17,6 +17,7 @@
 	never_type,
 	half_open_range_patterns,
 	exclusive_range_pattern,
+	option_result_unwrap_unchecked,
 )]
 
 #![deny(unused_must_use)]
