@@ -32,7 +32,6 @@ pub mod weak_key;
 pub mod atomic;
 pub mod bits_ext;
 pub mod on_drop;
-pub mod rev_ord;
 pub mod maps;
 pub mod range_ext;
 pub mod thin;
@@ -52,6 +51,10 @@ pub mod option_ext;
 #[cfg(feature = "serde")] pub mod bytes;
 #[cfg(feature = "serde")] pub mod ser_iter;
 
+#[deprecated(note = "use std::cmp:::Reverse")]
+pub mod rev_ord;
+
+#[allow(deprecated)]
 pub use crate::{
 	cvec::CVec,
 	sbox::SBox,

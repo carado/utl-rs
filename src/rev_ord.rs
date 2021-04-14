@@ -1,7 +1,6 @@
 use std::{ops::{Deref, DerefMut}, cmp::Ordering};
 
 #[derive(PartialEq, Eq, Debug, Hash, Copy, Clone)]
-#[deprecated(note = "use std::cmp:::Reverse")]
 pub struct RevOrd<T: ?Sized>(pub T);
 
 impl<T> RevOrd<T> {
