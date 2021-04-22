@@ -23,7 +23,7 @@
 #![deny(unused_must_use)]
 
 pub mod cvec;
-pub mod sbox;
+//pub mod sbox;
 pub mod entry_ext;
 pub mod just_hash;
 pub mod by_bits;
@@ -34,7 +34,7 @@ pub mod bits_ext;
 pub mod on_drop;
 pub mod maps;
 pub mod range_ext;
-pub mod thin;
+//pub mod thin;
 pub mod unreach;
 //pub mod alloc_vec;
 //pub mod dedup_vec;
@@ -57,7 +57,7 @@ pub mod rev_ord;
 #[allow(deprecated)]
 pub use crate::{
 	cvec::CVec,
-	sbox::SBox,
+	//sbox::SBox,
 	entry_ext::*,
 	just_hash::*,
 	by_bits::*,
@@ -67,7 +67,7 @@ pub use crate::{
 	on_drop::*,
 	rev_ord::*,
 	range_ext::*,
-	thin::*,
+	//thin::*,
 	unreach::*,
 	derefs::*,
 	by_ptr::*,

@@ -276,6 +276,14 @@ impl<'a, T> IntoIterator for &'a mut CVec<T> {
 	fn into_iter(self) -> Self::IntoIter { (**self).iter_mut() }
 }
 
+impl<T> std::iter::FromIterator<T> for CVec<T> {
+	fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+		let mut self_ = Self::new();
+		self_.extend(iter);
+		self_
+	}
+}
+
 pub struct IntoIter<T> { vec: CVec<T>, pos: usize }
 
 impl<T> Drop for IntoIter<T> {
@@ -418,5 +426,82 @@ fn test() {
 
 	vec = CVec::new();
 	vec.extend(I(0..100));
+}
+
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for CVec<T> {
+	fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error> where
+		S: serde::Serializer,
+	{
+		use serde::ser::SerializeSeq;
+		let mut ser = ser.serialize_seq(Some(self.len()))?;
+		for value in self {
+			ser.serialize_element(value)?;
+		}
+		ser.end()
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for CVec<T> {
+	fn deserialize<D>(de: D) -> Result<Self, D::Error> where
+		D: serde::Deserializer<'de>,
+	{
+		use std::marker::PhantomData;
+
+		struct Visitor<T>(PhantomData<T>);
+
+		impl<'de, T> serde::de::Visitor<'de> for Visitor<T> where
+			T: serde::Deserialize<'de>,
+		{
+			type Value = CVec<T>;
+
+			fn expecting(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+				fmt.write_str("CVec sequence")
+			}
+
+			fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error> where
+				A: serde::de::SeqAccess<'de>,
+			{
+				struct Iter<'err, 'de, A: serde::de::SeqAccess<'de>, T> {
+					size_hint: (usize, Option<usize>),
+					seq: A,
+					error: &'err mut Option<A::Error>,
+					_item: PhantomData<(&'de (), T)>,
+				}
+
+				impl<'err, 'de, A, T> std::iter::Iterator for Iter<'err, 'de, A, T> where
+					A: serde::de::SeqAccess<'de>,
+					T: serde::Deserialize<'de>,
+				{
+					type Item = T;
+					fn size_hint(&self) -> (usize, Option<usize>) { self.size_hint }
+					fn next(&mut self) -> Option<T> {
+						match self.seq.next_element() {
+							Ok(opt_value) => opt_value,
+							Err(error) => { self.error.get_or_insert_with(|| error); None },
+						}
+					}
+				}
+
+				let size_hint =
+					seq.size_hint().map_or_else(|| (0, None), |s| (s, Some(s)));
+
+				let mut opt_error = None;
+
+				let vec = <CVec<T> as std::iter::FromIterator<T>>::from_iter(
+					Iter { size_hint, seq, error: &mut opt_error, _item: PhantomData },
+				);
+
+				if let Some(error) = opt_error {
+					Err(error)
+				} else {
+					Ok(vec)
+				}
+			}
+		}
+
+		de.deserialize_seq(Visitor::<T>(PhantomData))
+	}
 }
 
