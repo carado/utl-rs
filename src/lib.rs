@@ -1,13 +1,9 @@
 #![feature(
-	raw,
 	coerce_unsized,
-	unsize,
 	allocator_api,
 	trait_alias,
 	extend_one,
 	trusted_len,
-	slice_ptr_get,
-	untagged_unions,
 	hash_raw_entry,
 	maybe_uninit_extra,
 	maybe_uninit_ref,
