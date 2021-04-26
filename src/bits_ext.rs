@@ -11,7 +11,7 @@ pub trait BitsExtReqs =
 	BitXor + BitXorAssign +
 ;
 
-pub trait BitsExt: BitsExtReqs {
+pub unsafe trait BitsExt: BitsExtReqs {
 	const BIT_COUNT: u32 = (8 * size_of::<Self>()) as u32;
 
 	#[inline]
@@ -61,7 +61,18 @@ pub trait BitsExt: BitsExtReqs {
 	}
 }
 
-impl<T: BitsExtReqs> BitsExt for T {}
+unsafe impl BitsExt for u8 {}
+unsafe impl BitsExt for u16 {}
+unsafe impl BitsExt for u32 {}
+unsafe impl BitsExt for u64 {}
+unsafe impl BitsExt for u128 {}
+unsafe impl BitsExt for usize {}
+unsafe impl BitsExt for i8 {}
+unsafe impl BitsExt for i16 {}
+unsafe impl BitsExt for i32 {}
+unsafe impl BitsExt for i64 {}
+unsafe impl BitsExt for i128 {}
+unsafe impl BitsExt for isize {}
 
 #[test]
 fn test() {
