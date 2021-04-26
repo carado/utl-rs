@@ -184,6 +184,14 @@ impl<T> CVec<T> {
 		unsafe { self.dealloc(); }
 		forget(replace(self, Self::new()));
 	}
+
+	pub fn swap_remove(&mut self, index: usize) -> T {
+		let mut value = self.pop().unwrap();
+		if self.len() != index {
+			value = replace(&mut self[index], value);
+		}
+		value
+	}
 }
 
 impl<T> Extend<T> for CVec<T> {
