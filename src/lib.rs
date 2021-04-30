@@ -76,6 +76,7 @@ pub use crate::{
 };
 
 pub use ::servo_arc::Arc as SArc;
+pub use ::either::{Either, Left, Right};
 
 pub use parking_lot;
 
