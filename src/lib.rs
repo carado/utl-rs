@@ -44,6 +44,7 @@ pub mod generator_state_ext;
 pub mod vec_ext;
 pub mod is_default;
 pub mod option_ext;
+pub mod num_as;
 #[cfg(feature = "serde")] pub mod bytes;
 #[cfg(feature = "serde")] pub mod ser_iter;
 
@@ -73,6 +74,7 @@ pub use crate::{
 	generator_state_ext::*,
 	is_default::IsDefault,
 	option_ext::OptionExt,
+	num_as::NumAs,
 };
 
 pub use ::servo_arc::Arc as SArc;
