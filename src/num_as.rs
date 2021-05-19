@@ -7,11 +7,15 @@ impl<T, U> NumAs<U> for T where
 	T: num_traits::AsPrimitive<U>,
 	U: 'static + Copy + std::convert::TryFrom<T>,
 {
-	#[cfg(debug_assertions)] fn num_as(self) -> U {
+	#[cfg(debug_assertions)]
+	#[inline]
+	fn num_as(self) -> U {
 		self.try_num_as().expect("failed num_as")
 	}
 
-	#[cfg(not(debug_assertions))] fn num_as(self) -> U {
+	#[cfg(not(debug_assertions))]
+	#[inline]
+	fn num_as(self) -> U {
 		self.as_()
 	}
 
