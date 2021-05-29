@@ -36,7 +36,7 @@ impl<I, T> Serialize for SerTrustedLen<I> where
 	fn serialize<S: Serializer>(&self, ser: S) -> Result<S::Ok, S::Error> {
 		let mut seq;
 		if let Some(iter) = self.0.take() {
-			seq = ser.serialize_seq(Some(iter.size_hint().0))?;
+			seq = ser.serialize_seq(Some(iter.size_hint().1.unwrap()))?;
 			for element in iter {
 				seq.serialize_element(&element)?;
 			}
